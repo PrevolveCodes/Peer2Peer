@@ -408,3 +408,11 @@ svg {
     align-items: center !important;
     gap: 8px !important;
 }
+
+/* Ensure the active chat panel maintains layout when revealed */
+.active-chat-pane:not(.hidden) {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    width: 100% !important;
+}
