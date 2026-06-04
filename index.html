@@ -36,7 +36,9 @@
             <aside class="discord-sidebar">
                 <div class="sidebar-header">
                     <h2>Rooms</h2>
-                    <button id="theme-toggle" class="btn-icon">🌓</button>
+                    <button id="theme-toggle" class="btn-icon-svg" title="Toggle Theme">
+                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2m0 2a8 8 0 0 1 8 8a8 8 0 0 1-8 8V4Z"/></svg>
+                    </button>
                 </div>
 
                 <div id="room-menu-list" class="room-list-container"></div>
@@ -52,14 +54,19 @@
 
                 <div class="sidebar-footer">
                     <div class="user-info">
-                        <span id="user-status-dot" class="status-dot"></span>
+                        <div class="avatar-wrapper">
+                            <img id="user-display-pfp" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23949ba4'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>" alt="pfp">
+                            <span class="status-dot"></span>
+                        </div>
                         <div class="user-meta-block">
                             <strong id="user-display-name">...</strong>
                             <span id="user-custom-status" class="custom-status-text"></span>
                         </div>
                     </div>
                     <div class="footer-buttons">
-                        <button id="profile-nav-btn" class="btn-text">config</button>
+                        <button id="profile-nav-btn" class="btn-icon-svg" title="Settings">
+                            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5s3.5 1.57 3.5 3.5s-1.57 3.5-3.5 3.5z"/></svg>
+                        </button>
                     </div>
                 </div>
             </aside>
@@ -71,6 +78,14 @@
                     <h3>User Settings</h3>
                     <hr>
                     <div class="input-group">
+                        <label>Profile Picture</label>
+                        <div class="pfp-edit-row">
+                            <img id="edit-pfp-preview" src="" alt="preview">
+                            <input type="file" id="edit-pfp-file" accept="image/*" class="file-hidden">
+                            <button type="button" class="btn-small" onclick="document.getElementById('edit-pfp-file').click()">Upload Image</button>
+                        </div>
+                    </div>
+                    <div class="input-group">
                         <label for="edit-username-input">Username</label>
                         <input type="text" id="edit-username-input" placeholder="Change Username" maxlength="15">
                     </div>
@@ -79,7 +94,7 @@
                         <input type="text" id="edit-status-input" placeholder="What's cooking?" maxlength="30">
                     </div>
                     <div class="input-group">
-                        <label for="edit-color-input">Profile Theme Color</label>
+                        <label for="edit-color-input">Profile Color Theme</label>
                         <div class="color-picker-row">
                             <input type="color" id="edit-color-input" value="#22c55e">
                             <span class="color-caption">Changes your message text color</span>
@@ -91,8 +106,30 @@
                     <button id="logout-btn" class="btn-text danger-text" style="margin-top: 10px;">Log Out Account</button>
                 </div>
 
+                <div id="room-settings-card" class="card center-card hidden">
+                    <h3>Room Settings</h3>
+                    <hr>
+                    <div class="input-group">
+                        <label for="edit-room-name-input">Room Display Name</label>
+                        <input type="text" id="edit-room-name-input" placeholder="Room Name">
+                    </div>
+                    <div class="input-group">
+                        <label>Room Custom Icon Image</label>
+                        <div class="pfp-edit-row">
+                            <img id="edit-room-icon-preview" src="" alt="preview">
+                            <input type="file" id="edit-room-icon-file" accept="image/*" class="file-hidden">
+                            <button type="button" class="btn-small" onclick="document.getElementById('edit-room-icon-file').click()">Select Icon Image</button>
+                        </div>
+                    </div>
+                    <hr>
+                    <button id="save-room-settings-btn" class="btn-primary">Save Changes</button>
+                    <button id="close-room-settings-btn" class="btn-secondary">Cancel</button>
+                </div>
+
                 <div id="welcome-view" class="empty-state">
-                    <div class="empty-icon">💬</div>
+                    <div class="empty-icon-svg">
+                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+                    </div>
                     <h2>Welcome to P2P BETA V 1.0</h2>
                     <p>Select a room from the menu sidebar or create a new room to start texting your friends!</p>
                 </div>
@@ -100,25 +137,65 @@
                 <div id="room-view" class="active-chat-pane hidden">
                     <div class="chat-header">
                         <div class="chat-title-info">
-                            <span class="hashtag">#</span>
+                            <img id="active-room-avatar" class="room-avatar-header hidden" src="" alt="room icon">
+                            <span id="active-room-hashtag" class="hashtag">#</span>
                             <span id="active-room-title">------</span>
                         </div>
                         <div class="header-actions">
+                            <button id="room-settings-btn" class="btn-small">Room Settings</button>
+                            <button id="view-pins-btn" class="btn-small">📌 Pins (<span id="pin-count">0</span>)</button>
                             <button id="copy-btn" class="btn-small">Copy Room Code</button>
                             <button id="remove-room-btn" class="btn-small danger-outline">Remove From List</button>
                         </div>
+                    </div>
+
+                    <div id="pins-drawer" class="pins-dropdown hidden">
+                        <h4>Pinned Messages</h4>
+                        <div id="pins-list-box"></div>
+                    </div>
+
+                    <div id="reply-context-bar" class="reply-context hidden">
+                        <span id="reply-context-text">Replying to...</span>
+                        <button id="cancel-reply-btn" class="btn-text-close">✕</button>
                     </div>
 
                     <div id="chat-box"></div>
                     <div id="typing-indicator"></div>
 
                     <div class="chat-input-area">
-                        <textarea id="message-input" placeholder="Message room..." rows="1"></textarea>
+                        <div class="input-container-wrapper">
+                            <button id="media-attach-btn" class="btn-attach" title="Upload Media">
+                                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                            </button>
+                            <input type="file" id="hidden-media-input" accept="image/*,video/*,audio/*" class="file-hidden">
+                            <textarea id="message-input" placeholder="Message room..." rows="1"></textarea>
+                        </div>
                         <button id="send-btn" class="btn-primary">Send</button>
                     </div>
                 </div>
             </main>
 
+        </div>
+    </div>
+
+    <div id="user-inspect-modal" class="modal-overlay hidden">
+        <div class="inspect-card">
+            <div class="inspect-header-banner"></div>
+            <div class="inspect-avatar-row">
+                <img id="inspect-pfp" src="" alt="user avatar">
+            </div>
+            <div class="inspect-body">
+                <h3 id="inspect-username">...</h3>
+                <div class="inspect-section">
+                    <label>Custom Status</label>
+                    <p id="inspect-status">None</p>
+                </div>
+                <div class="inspect-section">
+                    <label>Role</label>
+                    <p class="role-badge">Beta Tester</p>
+                </div>
+                <button id="close-inspect-btn" class="btn-secondary btn-full">Close Profile</button>
+            </div>
         </div>
     </div>
 
