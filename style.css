@@ -234,45 +234,32 @@ body.light-theme .bubble-user { color: #111111; }
 /* ==========================================================================
    6. USER PROFILE DISCORD MODAL WINDOW SYSTEM
    ========================================================================== */
+/* FULL FIX FOR PROFILE MODAL WINDOW CONTENT VISIBILITY */
 #profile-card {
     position: fixed !important;
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
-    z-index: 9999 !important; /* Layers directly on top of the screen framework */
+    z-index: 9999 !important;
     
+    display: flex !important;
+    flex-direction: column !important;
     background-color: #313338 !important; 
     color: #ffffff !important;
     width: 90% !important;
     max-width: 480px !important;
     max-height: 85vh !important;
-    overflow-y: auto !important; /* Internal scroll block container rules */
+    overflow-y: auto !important;
     
     padding: 24px !important;
     border-radius: 8px !important;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6) !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8) !important;
     border: 1px solid #3f4147 !important;
-    
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 14px !important;
 }
 
-#profile-card.hidden { display: none !important; }
-
-#profile-card .input-group { display: flex !important; flex-direction: column !important; gap: 8px !important; margin-bottom: 4px; }
-#profile-card label { font-size: 0.75rem !important; color: #b5bac1 !important; text-transform: uppercase !important; font-weight: 700 !important; letter-spacing: 0.05em; }
-
-#profile-card input[type="text"], 
-#profile-card textarea {
-    background-color: #1e1f22 !important;
-    color: #f2f3f5 !important;
-    border: 1px solid #2b2d31 !important;
-    border-radius: 4px !important;
-    padding: 10px !important;
-    font-size: 0.95rem !important;
-    width: 100% !important;
-    outline: none !important;
+/* Force it to hide properly when the close button is clicked */
+#profile-card.hidden {
+    display: none !important;
 }
 #profile-card input:focus, #profile-card textarea:focus { border-color: #5865f2 !important; }
 
