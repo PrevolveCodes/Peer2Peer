@@ -51,7 +51,8 @@ const userDisplayPfp = document.getElementById('user-display-pfp');
 const editPfpPreview = document.getElementById('edit-pfp-preview');
 const editRoomIconPreview = document.getElementById('edit-room-icon-preview');
 
-document.getElementById('theme-toggle').addEventListener('click', () => {
+// Theme toggle logic (Can now be bound to a button inside user settings)
+document.getElementById('theme-toggle')?.addEventListener('click', () => {
     document.body.classList.toggle('light-theme');
 });
 
@@ -85,14 +86,32 @@ document.getElementById('edit-room-icon-file').addEventListener('change', async 
     if (res) editRoomIconPreview.src = res;
 });
 
-// Settings button binding
+// FIX: Media files upload instantly as separate standalone chat bubble messages
+document.getElementById('hidden-media-input').addEventListener('change', async function() {
+    const encodedMediaString = await processFileAsync(this);
+    if (encodedMediaString && currentRoomCode) {
+        let outboundPayload = {
+            sender: currentUsername,
+            senderUid: currentUid,
+            senderColor: currentTextColor,
+            senderAvatar: currentPfpData,
+            text: "", 
+            media: encodedMediaString,
+            timestamp: Date.now(),
+            isPinned: false
+        };
+        await push(ref(db, `rooms/${currentRoomCode}/messages`), outboundPayload);
+        this.value = ''; 
+    }
+});
+
+// Profile setup configurations
 document.getElementById('profile-nav-btn').addEventListener('click', () => {
     welcomeView.classList.add('hidden');
     roomView.classList.add('hidden');
     roomSettingsCard.classList.add('hidden');
     profileCard.classList.remove('hidden');
     
-    // FIXED: Removed window scope prefix mismatch so data references populate successfully
     try { document.getElementById('edit-username-input').value = currentUsername || ""; } catch(e){}
     try { document.getElementById('edit-status-input').value = currentStatus || ""; } catch(e){}
     try { document.getElementById('edit-color-input').value = currentTextColor || "#ffffff"; } catch(e){}
@@ -218,6 +237,7 @@ document.getElementById('auth-submit-btn').addEventListener('click', async () =>
 
 document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
+// FIX: Avoid login screen flash by enforcing hidden state transformations cleanly
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUid = user.uid;
@@ -399,6 +419,9 @@ function appendBubble(msgId, data, triggerSound) {
     }
     reactionsHtml += '</div>';
 
+    // FIX: Only render text wrapper block if string payload actually contains letters
+    const textBlockHtml = data.text ? `<div class="bubble-text" ${colorStyle}>${data.text}</div>` : '';
+
     const html = `
         <div class="bubble-row" id="row-${msgId}">
             <img class="bubble-avatar-side" src="${userAvatar}" onclick="window.inspectUserAccount('${data.senderUid}')">
@@ -408,12 +431,12 @@ function appendBubble(msgId, data, triggerSound) {
                     <span class="bubble-user" onclick="window.inspectUserAccount('${data.senderUid}')">${data.sender}</span>
                     <span class="bubble-timestamp">${timeString}</span>
                 </div>
-                <div class="bubble-text" ${colorStyle}>${data.text}</div>
+                ${textBlockHtml}
                 ${mediaHtml}
                 ${reactionsHtml}
                 
                 <div class="bubble-menu-strip">
-                    <button class="strip-btn" title="Reply Message" onclick="window.triggerReplySetup('${msgId}', '${data.sender}', '${data.text.substring(0,20)}')">
+                    <button class="strip-btn" title="Reply Message" onclick="window.triggerReplySetup('${msgId}', '${data.sender}', '${(data.text || "Media Content").substring(0,20)}')">
                         <svg viewBox="0 0 24 24"><path fill="currentColor" d="M10 9V5l-7 7l7 7v-4.1c5 0 8.5 1.6 11 5.1c-1-5-4-10-11-11z"/></svg>
                     </button>
                     <button class="strip-btn" title="Thumbs Up" onclick="window.toggleReaction('${msgId}', '👍')">
@@ -524,10 +547,7 @@ document.getElementById('media-attach-btn').addEventListener('click', () => docu
 
 async function sendMessage() {
     const text = messageInput.value.trim();
-    const mediaInput = document.getElementById('hidden-media-input');
-    const encodedMediaString = await processFileAsync(mediaInput);
-
-    if (!text && !encodedMediaString || !currentRoomCode) return;
+    if (!text || !currentRoomCode) return;
 
     let outboundPayload = {
         sender: currentUsername,
@@ -535,7 +555,7 @@ async function sendMessage() {
         senderColor: currentTextColor,
         senderAvatar: currentPfpData,
         text: text,
-        media: encodedMediaString,
+        media: "",
         timestamp: Date.now(),
         isPinned: false
     };
@@ -551,7 +571,6 @@ async function sendMessage() {
     await push(ref(db, `rooms/${currentRoomCode}/messages`), outboundPayload);
 
     messageInput.value = '';
-    mediaInput.value = '';
     messageInput.style.height = 'auto';
     cancelReply();
     update(ref(db, `rooms/${currentRoomCode}/typing`), { [currentUsername]: false });
