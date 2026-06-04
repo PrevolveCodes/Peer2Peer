@@ -6,7 +6,7 @@
     --text-muted: #949ba4;
     --border: #3f4147;
     --accent: #5865f2;
-    --bubble-bg: transparent;    /* Removed block look for seamless flow */
+    --bubble-bg: transparent;   
     --alert-bg: #da373c;
     --alert-text: #ffffff;
 }
@@ -35,7 +35,7 @@ html, body, .discord-wrapper { height: 100%; width: 100%; overflow: hidden; back
 
 .discord-layout { display: flex; height: 100%; width: 100%; }
 
-/* SIDEBAR */
+/* SIDEBAR STRIP LAYOUT */
 .discord-sidebar { width: 260px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
 .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid var(--border); }
 .sidebar-header h2 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
@@ -51,6 +51,7 @@ html, body, .discord-wrapper { height: 100%; width: 100%; overflow: hidden; back
 .action-buttons { display: flex; gap: 6px; }
 .action-buttons button { flex: 1; }
 
+/* RE-ENGINEERED LOWER SIDEBAR PROFILE ACCESSIBILITY ZONE WITH ACCOUNT GEAR SETTINGS */
 .sidebar-footer { padding: 8px 12px; background-color: #232428; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); height: 56px; }
 .user-info { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; min-width: 0; }
 .avatar-wrapper { position: relative; width: 34px; height: 34px; flex-shrink: 0; }
@@ -64,14 +65,14 @@ html, body, .discord-wrapper { height: 100%; width: 100%; overflow: hidden; back
 .btn-icon-svg:hover { color: var(--text); background: var(--border); }
 .btn-icon-svg svg { width: 20px; height: 20px; }
 
-/* MAIN PANELS */
+/* MAIN CONTAINER LAYOUT */
 .discord-main { flex-grow: 1; background-color: var(--bg-main); display: flex; flex-direction: column; padding: 16px; position: relative; }
 .empty-state { margin: auto; text-align: center; max-width: 400px; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .empty-icon-svg { width: 64px; height: 64px; color: #5865f2; }
 .empty-state h2 { color: var(--text); font-size: 1.5rem; font-weight: 700; }
 .empty-state p { font-size: 0.9rem; line-height: 1.5; }
 
-/* UNIFORM MESSAGES ENGINE (DISCORD STYLE) */
+/* LINEAR MESSAGE COMPONENT (FLAT, UNIFORM STYLING) */
 .active-chat-pane { display: flex; flex-direction: column; height: 100%; width: 100%; }
 .chat-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 8px; }
 .chat-title-info { display: flex; align-items: center; font-size: 1.1rem; font-weight: 600; gap: 8px; }
@@ -80,18 +81,18 @@ html, body, .discord-wrapper { height: 100%; width: 100%; overflow: hidden; back
 
 #chat-box { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 12px 4px; }
 
-/* Message container wrapper with perfect hover overlay spacing */
+/* FIXED ACCURATE POSITIONING FLUSH WITH HOVER CONTENT BOUNDS */
 .bubble-row { 
     display: flex; 
     flex-direction: row; 
     width: 100%; 
     position: relative; 
-    padding: 8px 16px; 
+    padding: 6px 16px; 
     gap: 16px; 
     align-items: flex-start;
 }
 .bubble-row:hover {
-    background-color: rgba(0, 0, 0, 0.08);
+    background-color: rgba(0, 0, 0, 0.06);
 }
 
 .bubble-avatar-side {
@@ -115,7 +116,7 @@ html, body, .discord-wrapper { height: 100%; width: 100%; overflow: hidden; back
     display: flex; 
     align-items: baseline; 
     gap: 8px; 
-    margin-bottom: 4px; 
+    margin-bottom: 2px; 
 }
 .bubble-user { 
     font-size: 1rem; 
@@ -135,14 +136,14 @@ body.light-theme .bubble-user { color: #111111; }
 
 .bubble-text { 
     font-size: 1rem; 
-    line-height: 1.5; 
+    line-height: 1.45; 
     word-break: break-word; 
     white-space: pre-wrap; 
     font-weight: 400; 
     color: var(--text);
 }
 
-/* Sub-payload Elements */
+/* Attachments Render Parameters */
 .chat-image-payload { max-width: 400px; max-height: 300px; border-radius: 4px; margin-top: 6px; display: block; object-fit: cover; }
 .chat-media-player { margin-top: 6px; display: block; max-width: 400px; }
 
@@ -153,11 +154,11 @@ body.light-theme .bubble-user { color: #111111; }
 .react-badge:hover { border-color: var(--border); background: var(--border); }
 .react-badge.active { border-color: #5865f2; background: rgba(88,101,242,0.15); }
 
-/* Quick Action Menu Bar (Locks directly onto the hover element) */
+/* PERFECT ACTION STRIP: Locks 0px away from the top edge bounds of hovered content */
 .bubble-menu-strip { 
     display: none; 
     position: absolute; 
-    top: -20px; 
+    top: -14px; 
     right: 16px; 
     background: var(--bg-sidebar); 
     border: 1px solid var(--border); 
@@ -165,16 +166,16 @@ body.light-theme .bubble-user { color: #111111; }
     padding: 2px; 
     gap: 2px; 
     z-index: 10; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 .bubble-row:hover .bubble-menu-strip { 
     display: flex; 
 }
-.strip-btn { background: transparent; border: none; color: var(--text-muted); font-size: 0.82rem; padding: 4px 8px; border-radius: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.strip-btn { background: transparent; border: none; color: var(--text-muted); font-size: 0.82rem; padding: 4px 6px; border-radius: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .strip-btn:hover { color: var(--text); background: var(--border); }
-.strip-btn svg { width: 16px; height: 16px; }
+.strip-btn svg { width: 18px; height: 18px; }
 
-/* CHAT INPUT AND DRAWERS */
+/* CHAT CONTEXT COMPLIANCE */
 .pins-dropdown { background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 8px; max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
 .pinned-item-row { display: flex; justify-content: space-between; align-items: center; background: var(--bg-main); padding: 8px; border-radius: 4px; font-size: 0.85rem; border-left: 3px solid #f1c40f; }
 
@@ -184,7 +185,7 @@ body.light-theme .bubble-user { color: #111111; }
 .chat-input-area { display: flex; gap: 8px; flex-direction: column; background: var(--bg-main); }
 .input-container-wrapper { display: flex; width: 100%; background-color: var(--bg-inputs); border-radius: 8px; align-items: center; padding: 4px 12px; gap: 12px; }
 
-/* Distinct Custom Plus Attachment Switch */
+/* EXPLICIT DESIGN FOR DISCORD MEDIA PLUS SIGN BUTTON CHANNELS */
 .btn-attach { 
     background: #4e5058; 
     border: none; 
@@ -198,10 +199,10 @@ body.light-theme .bubble-user { color: #111111; }
     border-radius: 50%; 
     flex-shrink: 0;
 }
-.btn-attach:hover { background: #6d6f78; }
-.btn-attach svg { width: 14px; height: 14px; }
+.btn-attach:hover { background: #6d6f78; color: #ffffff; }
+.btn-attach svg { width: 14px; height: 14px; display: block; }
 
-/* PROFILE MODAL */
+/* PROFILE LOOKUP OVERLAYS */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .inspect-card { width: 300px; background: #1e1f22; border-radius: 8px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.5); border: 1px solid var(--border); }
 .inspect-header-banner { height: 60px; background: #5865f2; }
@@ -213,7 +214,7 @@ body.light-theme .bubble-user { color: #111111; }
 .role-badge { display: inline-block; background: rgba(88,101,242,0.2); color: #5865f2; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; width: fit-content; }
 .btn-full { width: 100%; text-align: center; margin-top: 4px; }
 
-/* UTILITIES */
+/* CONTROLS UTILITY ENGINE */
 .input-group { display: flex; flex-direction: column; gap: 4px; }
 .input-group label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
 input, textarea { background-color: var(--bg-inputs); color: var(--text); border: 1px solid transparent; border-radius: 4px; padding: 10px; font-size: 0.95rem; outline: none; width: 100%; }
