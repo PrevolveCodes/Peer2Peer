@@ -36,7 +36,7 @@
             <aside class="discord-sidebar">
                 <div class="sidebar-header">
                     <h2>Rooms</h2>
-                    <button id="theme-toggle" class="btn-icon-svg" title="Toggle Theme">
+                    <button id="theme-toggle" class="btn-icon-svg" title="Toggle Light/Dark Theme">
                         <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2m0 2a8 8 0 0 1 8 8a8 8 0 0 1-8 8V4Z"/></svg>
                     </button>
                 </div>
@@ -64,7 +64,7 @@
                         </div>
                     </div>
                     <div class="footer-buttons">
-                        <button id="profile-nav-btn" class="btn-icon-svg" title="User Settings">
+                        <button id="profile-nav-btn" class="btn-icon-svg" title="User App Settings">
                             <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5s3.5 1.57 3.5 3.5s-1.57 3.5-3.5 3.5z"/></svg>
                         </button>
                     </div>
@@ -72,7 +72,7 @@
             </aside>
 
             <main class="discord-main">
-                <div id="alert-banner" class="alert hidden">Warning banner...</div>
+                <div id="alert-banner" class="alert hidden">Warning message notification window pane...</div>
 
                 <div id="profile-card" class="card center-card hidden">
                     <h3>User Settings</h3>
@@ -97,7 +97,7 @@
                         <label for="edit-color-input">Profile Color Theme</label>
                         <div class="color-picker-row">
                             <input type="color" id="edit-color-input" value="#ffffff">
-                            <span class="color-caption">Changes your message text color</span>
+                            <span class="color-caption">Changes your message text color color</span>
                         </div>
                     </div>
                     <hr>
@@ -131,7 +131,7 @@
                         <svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
                     </div>
                     <h2>Welcome to P2P BETA V 1.0</h2>
-                    <p>Select a room from the menu sidebar or create a new room to start texting your friends!</p>
+                    <p>Select a room from the menu sidebar panel layout or initialize a brand new channel to start messaging friends!</p>
                 </div>
 
                 <div id="room-view" class="active-chat-pane hidden">
@@ -150,12 +150,12 @@
                     </div>
 
                     <div id="pins-drawer" class="pins-dropdown hidden">
-                        <h4>Pinned Messages</h4>
+                        <h4>Pinned Chat Content</h4>
                         <div id="pins-list-box"></div>
                     </div>
 
                     <div id="reply-context-bar" class="reply-context hidden">
-                        <span id="reply-context-text">Replying to...</span>
+                        <span id="reply-context-text">Replying context thread reference to...</span>
                         <button id="cancel-reply-btn" class="btn-text-close">✕</button>
                     </div>
 
@@ -164,7 +164,7 @@
 
                     <div class="chat-input-area">
                         <div class="input-container-wrapper">
-                            <button id="media-attach-btn" class="btn-attach" title="Upload Media">
+                            <button type="button" id="media-attach-btn" class="btn-attach" title="Upload Media Attachment File">
                                 <svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
                             </button>
                             <input type="file" id="hidden-media-input" accept="image/*,video/*,audio/*" class="file-hidden">
@@ -191,7 +191,7 @@
                     <p id="inspect-status">None</p>
                 </div>
                 <div class="inspect-section">
-                    <label>Role</label>
+                    <label>Role Privilege</label>
                     <p class="role-badge">Beta Tester</p>
                 </div>
                 <button id="close-inspect-btn" class="btn-secondary btn-full">Close Profile</button>
