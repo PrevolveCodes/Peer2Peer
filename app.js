@@ -1,9 +1,8 @@
-// --- MODULE IMPORTS ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getDatabase, ref, set, push, onValue, off, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getDatabase, ref, set, push, onValue, off, update, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-// --- YOUR FIREBASE CONFIGURATION (PLUGGED IN) ---
+// Your verified Firebase configuration keys
 const firebaseConfig = {
   apiKey: "AIzaSyAucXMpqBhYbZy1fSbkTKHX23y9bpx1hec",
   authDomain: "p2pminimalchat.firebaseapp.com",
@@ -15,22 +14,27 @@ const firebaseConfig = {
   measurementId: "G-9JNKBE87C3"
 };
 
-// --- INITIALIZE REALTIME APP STACKS ---
+// Initialize Application Stacks
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-// Tracking variables
-let currentRoomCode = null;
+// State tracking variables
+let currentUid = null;
 let currentUsername = "";
+let currentRoomCode = null;
 let isSignUpMode = true;
 let typingTimeout = null;
-let databaseListeners = [];
+let activeRoomListeners = [];
+let myJoinedRoomsList = {};
 
-// DOM elements
+// DOM Elements
 const authCard = document.getElementById('auth-card');
-const lobbyCard = document.getElementById('lobby-card');
-const roomCard = document.getElementById('room-card');
+const appLayout = document.getElementById('app-layout');
+const profileCard = document.getElementById('profile-card');
+const welcomeView = document.getElementById('welcome-view');
+const roomView = document.getElementById('room-view');
+const roomMenuList = document.getElementById('room-menu-list');
 const alertBanner = document.getElementById('alert-banner');
 const chatBox = document.getElementById('chat-box');
 const messageInput = document.getElementById('message-input');
@@ -38,24 +42,50 @@ const typingIndicator = document.getElementById('typing-indicator');
 const pingSound = document.getElementById('ping-sound');
 
 // --- Visual Theme Toggle ---
-document.getElementById('theme-toggle').addEventListener('click', (e) => {
+document.getElementById('theme-toggle').addEventListener('click', () => {
     document.body.classList.toggle('light-theme');
-    e.target.innerText = document.body.classList.contains('light-theme') ? 'Dark Mode' : 'Light Mode';
 });
 
 function showAlert(text) {
-    alertBanner.innerText = text || "You need to fill this in before chatting!";
+    alertBanner.innerText = text || "Error matching inputs!";
     alertBanner.classList.remove('hidden');
     setTimeout(() => alertBanner.classList.add('hidden'), 4000);
 }
 
-// --- Dynamic Textarea Sizing ---
+// --- Textarea Expand On Input Type ---
 messageInput.addEventListener('input', function() {
     this.style.height = 'auto';
     this.style.height = this.scrollHeight + 'px';
 });
 
-// --- Authentication Engine ---
+// --- Settings Profile Dashboard Handlers ---
+document.getElementById('profile-nav-btn').addEventListener('click', () => {
+    welcomeView.classList.add('hidden');
+    roomView.classList.add('hidden');
+    profileCard.classList.remove('hidden');
+    document.getElementById('edit-username-input').value = currentUsername;
+});
+
+document.getElementById('close-profile-btn').addEventListener('click', () => {
+    profileCard.classList.add('hidden');
+    if (currentRoomCode) roomView.classList.remove('hidden');
+    else welcomeView.classList.remove('hidden');
+});
+
+document.getElementById('save-profile-btn').addEventListener('click', async () => {
+    const newName = document.getElementById('edit-username-input').value.trim();
+    if (!newName) return showAlert("Name cannot be empty!");
+    try {
+        await updateProfile(auth.currentUser, { displayName: newName });
+        currentUsername = newName;
+        document.getElementById('user-display-name').innerText = currentUsername;
+        profileCard.classList.add('hidden');
+        if (currentRoomCode) roomView.classList.remove('hidden');
+        else welcomeView.classList.remove('hidden');
+    } catch (e) { showAlert(e.message); }
+});
+
+// --- Authentication Operations ---
 document.getElementById('auth-switch-btn').addEventListener('click', (e) => {
     isSignUpMode = !isSignUpMode;
     document.getElementById('auth-title').innerText = isSignUpMode ? "Create an Account" : "Welcome Back";
@@ -68,114 +98,143 @@ document.getElementById('auth-submit-btn').addEventListener('click', async () =>
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value.trim();
     const username = document.getElementById('auth-username').value.trim();
-
-    if (!email || !password || (isSignUpMode && !username)) return showAlert();
-
+    if (!email || !password || (isSignUpMode && !username)) return showAlert("Fill out fields!");
     try {
         if (isSignUpMode) {
-            const credential = await createUserWithEmailAndPassword(auth, email, password);
-            await updateProfile(credential.user, { displayName: username });
-        } else {
-            await signInWithEmailAndPassword(auth, email, password);
-        }
-    } catch (error) {
-        showAlert(error.message);
-    }
+            const res = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(res.user, { displayName: username });
+        } else { await signInWithEmailAndPassword(auth, email, password); }
+    } catch (e) { showAlert(e.message); }
 });
 
 document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        currentUsername = user.displayName || "Anonymous";
+        currentUid = user.uid;
+        currentUsername = user.displayName || "User";
         document.getElementById('user-display-name').innerText = currentUsername;
         authCard.classList.add('hidden');
-        lobbyCard.classList.remove('hidden');
+        appLayout.classList.remove('hidden');
+        syncSidebarMenu();
     } else {
-        leaveRoom();
-        lobbyCard.classList.add('hidden');
-        roomCard.classList.add('hidden');
+        detachActiveRoomListeners();
+        currentUid = null;
+        currentRoomCode = null;
+        appLayout.classList.add('hidden');
         authCard.classList.remove('hidden');
     }
 });
 
-// --- Room Logic Components ---
-document.getElementById('create-btn').addEventListener('click', async () => {
-    const password = document.getElementById('room-password-input').value.trim();
-    if (!password) return showAlert();
+// --- Sidebar Menu Management ---
+function syncSidebarMenu() {
+    const userMenuRef = ref(db, `users/${currentUid}/joinedRooms`);
+    onValue(userMenuRef, (snapshot) => {
+        roomMenuList.innerHTML = '';
+        myJoinedRoomsList = snapshot.val() || {};
+        
+        Object.keys(myJoinedRoomsList).forEach(code => {
+            const div = document.createElement('div');
+            div.className = `room-item ${currentRoomCode === code ? 'active' : ''}`;
+            div.innerText = code;
+            div.onclick = () => selectRoom(code);
+            roomMenuList.appendChild(div);
+        });
+    });
+}
+
+// Create Room Action
+document.getElementById('create-room-btn').addEventListener('click', async () => {
+    const pass = document.getElementById('sidebar-room-pass').value.trim();
+    if (!pass) return showAlert("Please set a room password!");
 
     const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    await set(ref(db, `rooms/${roomCode}/meta`), { password: pass });
+    await set(ref(db, `users/${currentUid}/joinedRooms/${roomCode}`), true);
     
-    // Write setup structural node into Firebase
-    await set(ref(db, `rooms/${roomCode}/meta`), { password: password });
-    enterRoom(roomCode);
+    document.getElementById('sidebar-room-pass').value = '';
+    selectRoom(roomCode);
 });
 
-document.getElementById('join-btn').addEventListener('click', () => {
-    const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-    const password = document.getElementById('room-password-input').value.trim();
+// Join Room Action
+document.getElementById('join-room-btn').addEventListener('click', async () => {
+    const code = document.getElementById('sidebar-room-code').value.trim().toUpperCase();
+    const pass = document.getElementById('sidebar-room-pass').value.trim();
+    if (!code || !pass) return showAlert("Enter Room Code and Password!");
 
-    if (!code || !password) return showAlert();
-
-    // Verify password against database entry
-    onValue(ref(db, `rooms/${code}/meta/password`), (snapshot) => {
-        if (snapshot.exists() && snapshot.val() === password) {
-            enterRoom(code);
-        } else {
-            showAlert("Invalid Room Code or Password!");
-        }
-    }, { onlyOnce: true });
+    const roomMetaPassRef = ref(db, `rooms/${code}/meta/password`);
+    const snapshot = await get(roomMetaPassRef);
+    
+    if (snapshot.exists() && snapshot.val() === pass) {
+        await set(ref(db, `users/${currentUid}/joinedRooms/${code}`), true);
+        document.getElementById('sidebar-room-code').value = '';
+        document.getElementById('sidebar-room-pass').value = '';
+        selectRoom(code);
+    } else {
+        showAlert("Invalid Code or Password!");
+    }
 });
 
-// --- Active Chat Implementation ---
-function enterRoom(roomCode) {
+// Remove Room Action
+document.getElementById('remove-room-btn').addEventListener('click', async () => {
+    if (!currentRoomCode) return;
+    await set(ref(db, `users/${currentUid}/joinedRooms/${currentRoomCode}`), null);
+    welcomeView.classList.remove('hidden');
+    roomView.classList.add('hidden');
+    detachActiveRoomListeners();
+    currentRoomCode = null;
+    syncSidebarMenu();
+});
+
+// --- Chat Workspace Loader ---
+function selectRoom(roomCode) {
+    profileCard.classList.add('hidden');
+    welcomeView.classList.add('hidden');
+    roomView.classList.remove('hidden');
+    
+    if (currentRoomCode) {
+        set(ref(db, `rooms/${currentRoomCode}/typing/${currentUsername}`), null);
+    }
+    detachActiveRoomListeners();
+    
     currentRoomCode = roomCode;
-    lobbyCard.classList.add('hidden');
-    roomCard.classList.remove('hidden');
-    document.getElementById('display-code').innerText = roomCode;
+    document.getElementById('active-room-title').innerText = roomCode;
     chatBox.innerHTML = '';
 
-    // Listen to real-time database messages
+    // Update active highlight class state in menu
+    Array.from(roomMenuList.children).forEach(el => {
+        el.classList.toggle('active', el.innerText === roomCode);
+    });
+
+    // Sub to message history nodes
     const messagesRef = ref(db, `rooms/${roomCode}/messages`);
     const msgListener = onValue(messagesRef, (snapshot) => {
         chatBox.innerHTML = '';
         let isFirstLoad = chatBox.children.length === 0;
-        
-        snapshot.forEach((childSnapshot) => {
-            const data = childSnapshot.val();
-            const identity = data.sender === currentUsername ? 'me' : 'them';
-            appendBubble(data.sender, data.text, identity, !isFirstLoad);
+        snapshot.forEach(child => {
+            const data = child.val();
+            const id = data.sender === currentUsername ? 'me' : 'them';
+            appendBubble(data.sender, data.text, id, !isFirstLoad);
         });
     });
-    databaseListeners.push({ ref: messagesRef, callback: msgListener });
+    activeRoomListeners.push({ ref: messagesRef, callback: msgListener });
 
-    // Listen to typing alerts from other users
+    // Sub to typing alerts node
     const typingRef = ref(db, `rooms/${roomCode}/typing`);
     const typeListener = onValue(typingRef, (snapshot) => {
         let typingUsers = [];
-        snapshot.forEach((child) => {
-            if (child.val() === true && child.key !== currentUsername) {
-                typingUsers.push(child.key);
-            }
+        snapshot.forEach(child => {
+            if (child.val() === true && child.key !== currentUsername) typingUsers.push(child.key);
         });
         typingIndicator.innerText = typingUsers.length > 0 ? `${typingUsers.join(', ')} is typing...` : '';
     });
-    databaseListeners.push({ ref: typingRef, callback: typeListener });
+    activeRoomListeners.push({ ref: typingRef, callback: typeListener });
 }
 
-function leaveRoom() {
-    if (!currentRoomCode) return;
-    set(ref(db, `rooms/${currentRoomCode}/typing/${currentUsername}`), null);
-    
-    // Clear dynamic bindings
-    databaseListeners.forEach(listener => off(listener.ref, 'value', listener.callback));
-    databaseListeners = [];
-    
-    currentRoomCode = null;
-    roomCard.classList.add('hidden');
-    lobbyCard.classList.remove('hidden');
+function detachActiveRoomListeners() {
+    activeRoomListeners.forEach(l => off(l.ref, 'value', l.callback));
+    activeRoomListeners = [];
 }
-document.getElementById('leave-btn').addEventListener('click', leaveRoom);
 
 function appendBubble(sender, text, identity, triggerSound = false) {
     const html = `
@@ -192,7 +251,7 @@ function appendBubble(sender, text, identity, triggerSound = false) {
     }
 }
 
-// --- Output Dispatch System ---
+// --- Outbound Processing Actions ---
 async function sendMessage() {
     const text = messageInput.value.trim();
     if (!text || !currentRoomCode) return;
@@ -216,15 +275,11 @@ messageInput.addEventListener('keydown', (e) => {
     }
 });
 
-// --- Transmit Dynamic Typing Signals ---
 messageInput.addEventListener('input', () => {
     if (!currentRoomCode) return;
-    
     if (!typingTimeout) {
         update(ref(db, `rooms/${currentRoomCode}/typing`), { [currentUsername]: true });
-    } else {
-        clearTimeout(typingTimeout);
-    }
+    } else clearTimeout(typingTimeout);
 
     typingTimeout = setTimeout(() => {
         update(ref(db, `rooms/${currentRoomCode}/typing`), { [currentUsername]: false });
@@ -232,10 +287,9 @@ messageInput.addEventListener('input', () => {
     }, 1500);
 });
 
-// --- Utility Actions ---
 document.getElementById('copy-btn').addEventListener('click', (e) => {
     navigator.clipboard.writeText(currentRoomCode).then(() => {
         e.target.innerText = "Copied!";
-        setTimeout(() => e.target.innerText = "Copy Code", 2000);
+        setTimeout(() => e.target.innerText = "Copy Room Code", 2000);
     });
 });
