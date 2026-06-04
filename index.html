@@ -3,54 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P2P Minimal Chat</title>
+    <title>P2P Chat</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
-<body class="dark-theme"> <div class="app-container">
+<body class="dark-theme">
+
+    <audio id="ping-sound" src="https://assets.mixkit.co/active_storage/sfx/2357/2357-84.wav" preload="auto"></audio>
+
+    <div class="app-container">
         <header>
-            <h1>p2p.chat</h1>
+            <h1>P2P Chat!</h1>
             <button id="theme-toggle" class="btn-text">Light Mode</button>
         </header>
 
-        <div id="lobby" class="card">
-            <div class="input-group">
-                <label for="username-input">Choose a Username</label>
-                <input type="text" id="username-input" placeholder="e.g., Alex" maxlength="15">
-            </div>
-            
-            <hr>
+        <div id="alert-banner" class="alert hidden">You need to fill this in before chatting!</div>
 
+        <div id="auth-card" class="card">
+            <h3 id="auth-title">Create an Account</h3>
+            <div class="input-group">
+                <label for="auth-email">Email</label>
+                <input type="email" id="auth-email" placeholder="you@example.com">
+            </div>
+            <div class="input-group">
+                <label for="auth-username">Username</label>
+                <input type="text" id="auth-username" placeholder="Alex">
+            </div>
+            <div class="input-group">
+                <label for="auth-password">Password</label>
+                <input type="password" id="auth-password" placeholder="At least 6 characters">
+            </div>
+            <button id="auth-submit-btn" class="btn-primary">Sign Up</button>
+            <button id="auth-switch-btn" class="btn-text">Already have an account? Log In</button>
+        </div>
+
+        <div id="lobby-card" class="card hidden">
+            <div class="lobby-header">
+                <span>Welcome, <strong id="user-display-name">...</strong></span>
+                <button id="logout-btn" class="btn-small">Log Out</button>
+            </div>
+            <hr>
+            <div class="input-group">
+                <label for="room-password-input">Room Password (To Protect/Join)</label>
+                <input type="password" id="room-password-input" placeholder="Enter group password">
+            </div>
             <button id="create-btn" class="btn-primary">Create New Room</button>
-            
             <div class="divider">or join existing</div>
-            
             <div class="join-box">
-                <input type="text" id="room-code-input" placeholder="Enter Room Code" maxlength="6">
+                <input type="text" id="room-code-input" placeholder="Room Code" maxlength="6">
                 <button id="join-btn" class="btn-secondary">Join</button>
             </div>
         </div>
 
-        <div id="room" class="card hidden">
+        <div id="room-card" class="card hidden">
             <div class="room-header">
                 <div>
-                    <span class="label">Room Code:</span>
+                    <span class="label">Room:</span>
                     <strong id="display-code">------</strong>
                 </div>
+                <button id="leave-btn" class="btn-small">Leave Room</button>
                 <button id="copy-btn" class="btn-small">Copy Code</button>
             </div>
 
             <div id="chat-box"></div>
-            
             <div id="typing-indicator"></div>
 
             <div class="chat-input-area">
-                <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+                <textarea id="message-input" placeholder="Type a message..." rows="1"></textarea>
                 <button id="send-btn" class="btn-primary">Send</button>
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
