@@ -92,19 +92,19 @@ document.getElementById('profile-nav-btn').addEventListener('click', () => {
     roomSettingsCard.classList.add('hidden');
     profileCard.classList.remove('hidden');
     
-    // Using try-catch blocks ensures that if a field is missing, the whole app won't freeze
+    // FIXED: Removed window scope prefix mismatch so data references populate successfully
     try { document.getElementById('edit-username-input').value = currentUsername || ""; } catch(e){}
     try { document.getElementById('edit-status-input').value = currentStatus || ""; } catch(e){}
     try { document.getElementById('edit-color-input').value = currentTextColor || "#ffffff"; } catch(e){}
-    try { document.getElementById('edit-pronouns-input').value = window.currentPronouns || ""; } catch(e){}
-    try { document.getElementById('edit-aboutme-input').value = window.currentAboutMe || ""; } catch(e){}
-    try { document.getElementById('edit-banner-color-input').value = window.currentBannerColor || "#5865f2"; } catch(e){}
+    try { document.getElementById('edit-pronouns-input').value = currentPronouns || ""; } catch(e){}
+    try { document.getElementById('edit-aboutme-input').value = currentAboutMe || ""; } catch(e){}
+    try { document.getElementById('edit-banner-color-input').value = currentBannerColor || "#5865f2"; } catch(e){}
     
     editPfpPreview.src = currentPfpData || fallbackSvg;
 });
 
 document.getElementById('close-profile-btn').addEventListener('click', (e) => {
-    e.preventDefault(); // Stop any default form submissions
+    e.preventDefault(); 
     profileCard.classList.add('hidden');
     if (currentRoomCode) {
         roomView.classList.remove('hidden');
@@ -207,7 +207,10 @@ document.getElementById('auth-submit-btn').addEventListener('click', async () =>
                 username: username,
                 statusText: "",
                 colorAccent: "#ffffff",
-                avatarData: fallbackSvg
+                avatarData: fallbackSvg,
+                pronouns: "",
+                aboutMe: "",
+                bannerColor: "#5865f2"
             });
         } else { await signInWithEmailAndPassword(auth, email, password); }
     } catch (e) { showAlert(e.message); }
@@ -357,7 +360,6 @@ function detachActiveRoomListeners() {
     activeRoomListeners = [];
 }
 
-// FORMATTED UNIFORM DISCORD MESSAGES WITH FLAT HIGH-CONTRAST SVG ASSETS
 function appendBubble(msgId, data, triggerSound) {
     const identity = data.sender === currentUsername ? 'me' : 'them';
     const colorStyle = data.senderColor ? `style="color: ${data.senderColor};"` : '';
@@ -387,7 +389,6 @@ function appendBubble(msgId, data, triggerSound) {
             const count = Object.keys(usersObj).length;
             const amIReacted = usersObj[currentUid] ? 'active' : '';
             if (count > 0) {
-                // Vector alternatives map to maintain inline visual integrity
                 let displayIcon = emoji;
                 if(emoji === '👍') displayIcon = `<svg style="width:12px;height:12px;display:inline-block;" viewBox="0 0 24 24"><path fill="currentColor" d="M23 10a2 2 0 0 0-2-2h-6.32l.96-4.57c.02-.1.03-.21.03-.32c0-.41-.17-.79-.44-1.06L14.17 1L7.59 7.58C7.22 7.95 7 8.45 7 9v10a2 2 0 0 0 2 2h9c.75 0 1.41-.41 1.76-1.03l3.57-8.34c.04-.15.07-.31.07-.47V10M1 9v12h4V9H1z"/></svg>`;
                 if(emoji === '❤️') displayIcon = `<svg style="width:12px;height:12px;display:inline-block;" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
