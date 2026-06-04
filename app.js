@@ -1,170 +1,241 @@
-let peer = null;
-let connections = []; 
-let isHost = false;
-let myUsername = "Anonymous";
+// --- MODULE IMPORTS ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getDatabase, ref, set, push, onValue, off, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+// --- YOUR FIREBASE CONFIGURATION (PLUGGED IN) ---
+const firebaseConfig = {
+  apiKey: "AIzaSyAucXMpqBhYbZy1fSbkTKHX23y9bpx1hec",
+  authDomain: "p2pminimalchat.firebaseapp.com",
+  databaseURL: "https://p2pminimalchat-default-rtdb.firebaseio.com",
+  projectId: "p2pminimalchat",
+  storageBucket: "p2pminimalchat.firebasestorage.app",
+  messagingSenderId: "37869407438",
+  appId: "1:37869407438:web:63485dde33bb8710f8d49f",
+  measurementId: "G-9JNKBE87C3"
+};
+
+// --- INITIALIZE REALTIME APP STACKS ---
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+// Tracking variables
+let currentRoomCode = null;
+let currentUsername = "";
+let isSignUpMode = true;
 let typingTimeout = null;
+let databaseListeners = [];
 
-// DOM Elements
-const themeToggle = document.getElementById('theme-toggle');
-const lobby = document.getElementById('lobby');
-const roomDiv = document.getElementById('room');
-const usernameInput = document.getElementById('username-input');
-const roomCodeInput = document.getElementById('room-code-input');
-const displayCode = document.getElementById('display-code');
-const copyBtn = document.getElementById('copy-btn');
+// DOM elements
+const authCard = document.getElementById('auth-card');
+const lobbyCard = document.getElementById('lobby-card');
+const roomCard = document.getElementById('room-card');
+const alertBanner = document.getElementById('alert-banner');
 const chatBox = document.getElementById('chat-box');
-const typingIndicator = document.getElementById('typing-indicator');
 const messageInput = document.getElementById('message-input');
-const sendBtn = document.getElementById('send-btn');
+const typingIndicator = document.getElementById('typing-indicator');
+const pingSound = document.getElementById('ping-sound');
 
-// --- Feature: Light/Dark Theme Toggle ---
-themeToggle.addEventListener('click', () => {
-    document.body.classList.toggle('dark-theme');
-    themeToggle.innerText = document.body.classList.contains('dark-theme') ? 'Light Mode' : 'Dark Mode';
+// --- Visual Theme Toggle ---
+document.getElementById('theme-toggle').addEventListener('click', (e) => {
+    document.body.classList.toggle('light-theme');
+    e.target.innerText = document.body.classList.contains('light-theme') ? 'Dark Mode' : 'Light Mode';
 });
 
-// --- Feature: Copy Room Code ---
-copyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(displayCode.innerText).then(() => {
-        copyBtn.innerText = "Copied!";
-        setTimeout(() => copyBtn.innerText = "Copy Code", 2000);
-    });
+function showAlert(text) {
+    alertBanner.innerText = text || "You need to fill this in before chatting!";
+    alertBanner.classList.remove('hidden');
+    setTimeout(() => alertBanner.classList.add('hidden'), 4000);
+}
+
+// --- Dynamic Textarea Sizing ---
+messageInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = this.scrollHeight + 'px';
 });
 
-// --- UI Helpers ---
-function appendMessage(sender, text, type = 'user') {
-    let msgHtml = '';
-    if (type === 'system') {
-        msgHtml = `<div class="msg msg-system">${text}</div>`;
-    } else {
-        msgHtml = `<div class="msg"><span class="msg-user">${sender}</span>${text}</div>`;
+// --- Authentication Engine ---
+document.getElementById('auth-switch-btn').addEventListener('click', (e) => {
+    isSignUpMode = !isSignUpMode;
+    document.getElementById('auth-title').innerText = isSignUpMode ? "Create an Account" : "Welcome Back";
+    document.getElementById('auth-username').parentNode.classList.toggle('hidden', !isSignUpMode);
+    document.getElementById('auth-submit-btn').innerText = isSignUpMode ? "Sign Up" : "Log In";
+    e.target.innerText = isSignUpMode ? "Already have an account? Log In" : "Need an account? Sign Up";
+});
+
+document.getElementById('auth-submit-btn').addEventListener('click', async () => {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value.trim();
+    const username = document.getElementById('auth-username').value.trim();
+
+    if (!email || !password || (isSignUpMode && !username)) return showAlert();
+
+    try {
+        if (isSignUpMode) {
+            const credential = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(credential.user, { displayName: username });
+        } else {
+            await signInWithEmailAndPassword(auth, email, password);
+        }
+    } catch (error) {
+        showAlert(error.message);
     }
-    chatBox.innerHTML += msgHtml;
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-// --- Broadcast Helper ---
-function broadcast(payload, ignoreConnection = null) {
-    connections.forEach(conn => {
-        if (conn.open && conn !== ignoreConnection) {
-            conn.send(payload);
-        }
-    });
-}
-
-// --- Setup Connection Flow ---
-function setupConnection(conn) {
-    connections.push(conn);
-
-    conn.on('data', (data) => {
-        if (data.type === 'join') {
-            // Store username on connection metadata
-            conn.peerUsername = data.username;
-            appendMessage('System', `${data.username} joined the room!`, 'system');
-            
-            // If Host, broadcast this join message to all other connected peers
-            if (isHost) {
-                broadcast({ type: 'join', username: data.username }, conn);
-            }
-        } 
-        else if (data.type === 'chat') {
-            appendMessage(data.sender, data.text);
-            if (isHost) broadcast(data, conn); // Host relays to everyone else
-        } 
-        else if (data.type === 'typing') {
-            if (data.isTyping) {
-                typingIndicator.innerText = `${data.username} is typing...`;
-            } else {
-                typingIndicator.innerText = '';
-            }
-            if (isHost) broadcast(data, conn); // Host relays typing status
-        }
-    });
-
-    conn.on('close', () => {
-        const leftUser = conn.peerUsername || 'Someone';
-        appendMessage('System', `${leftUser} left the room.`, 'system');
-        connections = connections.filter(c => c !== conn);
-        typingIndicator.innerText = '';
-    });
-}
-
-// --- Action: Create Room (Host) ---
-document.getElementById('create-btn').addEventListener('click', () => {
-    if (usernameInput.value.trim()) myUsername = usernameInput.value.trim();
-    isHost = true;
-
-    // Generate clean 6-digit capitalized code
-    const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    peer = new Peer(roomCode);
-
-    peer.on('open', (id) => {
-        lobby.classList.add('hidden');
-        roomDiv.classList.remove('hidden');
-        displayCode.innerText = id;
-        appendMessage('System', `Room created. You joined as "${myUsername}".`, 'system');
-    });
-
-    peer.on('connection', (conn) => {
-        setupConnection(conn);
-    });
 });
 
-// --- Action: Join Room (Guest) ---
+document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        currentUsername = user.displayName || "Anonymous";
+        document.getElementById('user-display-name').innerText = currentUsername;
+        authCard.classList.add('hidden');
+        lobbyCard.classList.remove('hidden');
+    } else {
+        leaveRoom();
+        lobbyCard.classList.add('hidden');
+        roomCard.classList.add('hidden');
+        authCard.classList.remove('hidden');
+    }
+});
+
+// --- Room Logic Components ---
+document.getElementById('create-btn').addEventListener('click', async () => {
+    const password = document.getElementById('room-password-input').value.trim();
+    if (!password) return showAlert();
+
+    const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    
+    // Write setup structural node into Firebase
+    await set(ref(db, `rooms/${roomCode}/meta`), { password: password });
+    enterRoom(roomCode);
+});
+
 document.getElementById('join-btn').addEventListener('click', () => {
-    const code = roomCodeInput.value.trim().toUpperCase();
-    if (!code) return alert('Please enter a room code');
-    if (usernameInput.value.trim()) myUsername = usernameInput.value.trim();
+    const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+    const password = document.getElementById('room-password-input').value.trim();
 
-    peer = new Peer(); // Random ID for guest
+    if (!code || !password) return showAlert();
 
-    peer.on('open', () => {
-        lobby.classList.add('hidden');
-        roomDiv.classList.remove('hidden');
-        displayCode.innerText = code;
+    // Verify password against database entry
+    onValue(ref(db, `rooms/${code}/meta/password`), (snapshot) => {
+        if (snapshot.exists() && snapshot.val() === password) {
+            enterRoom(code);
+        } else {
+            showAlert("Invalid Room Code or Password!");
+        }
+    }, { onlyOnce: true });
+});
+
+// --- Active Chat Implementation ---
+function enterRoom(roomCode) {
+    currentRoomCode = roomCode;
+    lobbyCard.classList.add('hidden');
+    roomCard.classList.remove('hidden');
+    document.getElementById('display-code').innerText = roomCode;
+    chatBox.innerHTML = '';
+
+    // Listen to real-time database messages
+    const messagesRef = ref(db, `rooms/${roomCode}/messages`);
+    const msgListener = onValue(messagesRef, (snapshot) => {
+        chatBox.innerHTML = '';
+        let isFirstLoad = chatBox.children.length === 0;
         
-        const conn = peer.connect(code);
-        setupConnection(conn);
-
-        conn.on('open', () => {
-            appendMessage('System', `You joined the room as "${myUsername}".`, 'system');
-            // Tell the host our username immediately upon connecting
-            conn.send({ type: 'join', username: myUsername });
+        snapshot.forEach((childSnapshot) => {
+            const data = childSnapshot.val();
+            const identity = data.sender === currentUsername ? 'me' : 'them';
+            appendBubble(data.sender, data.text, identity, !isFirstLoad);
         });
     });
+    databaseListeners.push({ ref: messagesRef, callback: msgListener });
+
+    // Listen to typing alerts from other users
+    const typingRef = ref(db, `rooms/${roomCode}/typing`);
+    const typeListener = onValue(typingRef, (snapshot) => {
+        let typingUsers = [];
+        snapshot.forEach((child) => {
+            if (child.val() === true && child.key !== currentUsername) {
+                typingUsers.push(child.key);
+            }
+        });
+        typingIndicator.innerText = typingUsers.length > 0 ? `${typingUsers.join(', ')} is typing...` : '';
+    });
+    databaseListeners.push({ ref: typingRef, callback: typeListener });
+}
+
+function leaveRoom() {
+    if (!currentRoomCode) return;
+    set(ref(db, `rooms/${currentRoomCode}/typing/${currentUsername}`), null);
+    
+    // Clear dynamic bindings
+    databaseListeners.forEach(listener => off(listener.ref, 'value', listener.callback));
+    databaseListeners = [];
+    
+    currentRoomCode = null;
+    roomCard.classList.add('hidden');
+    lobbyCard.classList.remove('hidden');
+}
+document.getElementById('leave-btn').addEventListener('click', leaveRoom);
+
+function appendBubble(sender, text, identity, triggerSound = false) {
+    const html = `
+        <div class="bubble-row ${identity}">
+            <span class="bubble-user">${sender}</span>
+            <div class="bubble-text">${text}</div>
+        </div>`;
+    chatBox.innerHTML += html;
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    if (identity === 'them' && triggerSound) {
+        pingSound.currentTime = 0;
+        pingSound.play().catch(() => {});
+    }
+}
+
+// --- Output Dispatch System ---
+async function sendMessage() {
+    const text = messageInput.value.trim();
+    if (!text || !currentRoomCode) return;
+
+    await push(ref(db, `rooms/${currentRoomCode}/messages`), {
+        sender: currentUsername,
+        text: text,
+        timestamp: Date.now()
+    });
+
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+    update(ref(db, `rooms/${currentRoomCode}/typing`), { [currentUsername]: false });
+}
+
+document.getElementById('send-btn').addEventListener('click', sendMessage);
+messageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
 });
 
-// --- Action: Send Message ---
-function sendMessage() {
-    const text = messageInput.value.trim();
-    if (!text) return;
-
-    const payload = { type: 'chat', sender: myUsername, text: text };
-    
-    broadcast(payload); // Send to everyone else
-    appendMessage('You', text); // Add to our screen
-
-    // Stop typing status instantly on send
-    messageInput.value = '';
-    sendTypingStatus(false);
-}
-
-sendBtn.addEventListener('click', sendMessage);
-messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
-
-// --- Feature: "** is typing..." Logic ---
-function sendTypingStatus(isTyping) {
-    broadcast({ type: 'typing', username: myUsername, isTyping: isTyping });
-}
-
+// --- Transmit Dynamic Typing Signals ---
 messageInput.addEventListener('input', () => {
-    // Clear old timer if typing continues
-    if (typingTimeout) clearTimeout(typingTimeout);
-    else sendTypingStatus(true); // Broadcast that we started typing
+    if (!currentRoomCode) return;
+    
+    if (!typingTimeout) {
+        update(ref(db, `rooms/${currentRoomCode}/typing`), { [currentUsername]: true });
+    } else {
+        clearTimeout(typingTimeout);
+    }
 
-    // If user stops typing for 1.5 seconds, clear the status
     typingTimeout = setTimeout(() => {
-        sendTypingStatus(false);
+        update(ref(db, `rooms/${currentRoomCode}/typing`), { [currentUsername]: false });
         typingTimeout = null;
     }, 1500);
+});
+
+// --- Utility Actions ---
+document.getElementById('copy-btn').addEventListener('click', (e) => {
+    navigator.clipboard.writeText(currentRoomCode).then(() => {
+        e.target.innerText = "Copied!";
+        setTimeout(() => e.target.innerText = "Copy Code", 2000);
+    });
 });
