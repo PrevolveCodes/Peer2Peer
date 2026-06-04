@@ -241,3 +241,58 @@ button { font-size: 0.85rem; font-weight: 500; border-radius: 4px; padding: 8px 
 .danger-outline { background: transparent; border: 1px solid #da373c; color: #da373c; }
 .danger-outline:hover { background: #da373c; color: #ffffff; }
 hr { border: 0; border-top: 1px solid var(--border); margin: 4px 0; }
+
+/* FORCE VISIBILITY FOR SETTINGS ICON AND FOOTER INTERFACE */
+.sidebar-footer {
+    display: flex !important;
+    visibility: visible !important;
+    background-color: #232428 !important;
+    z-index: 100;
+}
+.footer-buttons .btn-icon-svg {
+    color: #b5bac1 !important;
+    background: transparent;
+    width: 32px !important;
+    height: 32px !important;
+    cursor: pointer;
+}
+.footer-buttons .btn-icon-svg:hover {
+    color: #dbdee1 !important;
+    background-color: rgba(78, 80, 88, 0.3) !important;
+}
+.footer-buttons .btn-icon-svg svg {
+    width: 20px !important;
+    height: 20px !important;
+    display: block;
+}
+
+/* FORCE VISIBILITY FOR THE MEDIA ATTACH (+) BUTTON */
+.btn-attach {
+    display: flex !important;
+    visibility: visible !important;
+    background-color: #4e5058 !important;
+    color: #b5bac1 !important;
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+}
+.btn-attach:hover {
+    background-color: #6d6f78 !important;
+    color: #ffffff !important;
+}
+.btn-attach svg {
+    width: 16px !important;
+    height: 16px !important;
+    display: block !important;
+}
+
+/* PROFILE LAYOUT UTILITIES */
+.color-picker-grid {
+    display: flex;
+    gap: 16px;
+    margin-top: 4px;
+}
