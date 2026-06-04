@@ -74,37 +74,56 @@
             <main class="discord-main">
                 <div id="alert-banner" class="alert hidden">Warning message notification window pane...</div>
 
-                <div id="profile-card" class="card center-card hidden">
-                    <h3>User Settings</h3>
-                    <hr>
-                    <div class="input-group">
-                        <label>Profile Picture</label>
-                        <div class="pfp-edit-row">
-                            <img id="edit-pfp-preview" src="" alt="preview">
-                            <input type="file" id="edit-pfp-file" accept="image/*" class="file-hidden">
-                            <button type="button" class="btn-small" onclick="document.getElementById('edit-pfp-file').click()">Upload Image</button>
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <label for="edit-username-input">Username</label>
-                        <input type="text" id="edit-username-input" placeholder="Change Username" maxlength="15">
-                    </div>
-                    <div class="input-group">
-                        <label for="edit-status-input">Custom Status Message</label>
-                        <input type="text" id="edit-status-input" placeholder="What's cooking?" maxlength="30">
-                    </div>
-                    <div class="input-group">
-                        <label for="edit-color-input">Profile Color Theme</label>
-                        <div class="color-picker-row">
-                            <input type="color" id="edit-color-input" value="#ffffff">
-                            <span class="color-caption">Changes your message text color color</span>
-                        </div>
-                    </div>
-                    <hr>
-                    <button id="save-profile-btn" class="btn-primary">Save Changes</button>
-                    <button id="close-profile-btn" class="btn-secondary">Close Settings</button>
-                    <button id="logout-btn" class="btn-text danger-text" style="margin-top: 10px;">Log Out Account</button>
-                </div>
+               <div id="profile-card" class="card center-card hidden">
+    <h3>User Settings</h3>
+    <hr>
+    
+    <div class="input-group">
+        <label>Profile Customization</label>
+        <div class="pfp-edit-row">
+            <img id="edit-pfp-preview" src="" alt="preview">
+            <input type="file" id="edit-pfp-file" accept="image/*" class="file-hidden">
+            <button type="button" class="btn-small" onclick="document.getElementById('edit-pfp-file').click()">Change Avatar</button>
+        </div>
+    </div>
+
+    <div class="input-group">
+        <label for="edit-username-input">Username</label>
+        <input type="text" id="edit-username-input" placeholder="Change Username" maxlength="15">
+    </div>
+    <div class="input-group">
+        <label for="edit-pronouns-input">Pronouns</label>
+        <input type="text" id="edit-pronouns-input" placeholder="they/them" maxlength="15">
+    </div>
+
+    <div class="input-group">
+        <label for="edit-status-input">Custom Status Message</label>
+        <input type="text" id="edit-status-input" placeholder="What's cooking?" maxlength="30">
+    </div>
+
+    <div class="input-group">
+        <label for="edit-aboutme-input">About Me</label>
+        <textarea id="edit-aboutme-input" placeholder="Tell us about yourself..." rows="3" maxlength="160"></textarea>
+    </div>
+
+    <div class="input-group">
+        <label>Profile Themes</label>
+        <div class="color-picker-grid">
+            <div class="color-picker-row">
+                <input type="color" id="edit-banner-color-input" value="#5865f2">
+                <span class="color-caption">Banner Color</span>
+            </div>
+            <div class="color-picker-row">
+                <input type="color" id="edit-color-input" value="#ffffff">
+                <span class="color-caption">Text Color Accent</span>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <button id="save-profile-btn" class="btn-primary">Save Changes</button>
+    <button id="close-profile-btn" class="btn-secondary">Close Settings</button>
+    <button id="logout-btn" class="btn-text danger-text" style="margin-top: 10px;">Log Out Account</button>
+</div>
 
                 <div id="room-settings-card" class="card center-card hidden">
                     <h3>Room Settings</h3>
