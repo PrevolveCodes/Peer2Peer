@@ -1,14 +1,14 @@
 :root {
-    --bg-main: #313338;        /* Discord Dark Main */
-    --bg-sidebar: #2b2d31;     /* Discord Dark Sidebar */
-    --bg-inputs: #1e1f22;      /* Discord Dark Inputs */
+    --bg-main: #313338;
+    --bg-sidebar: #2b2d31;
+    --bg-inputs: #1e1f22;
     --text: #f2f3f5;
     --text-muted: #949ba4;
     --border: #3f4147;
-    --accent: #22c55e;         /* Green Bubble */
-    --bubble-me: #23a55a;      /* My Green Bubble */
+    --accent: #22c55e;
+    --bubble-me: #23a55a;
     --bubble-me-text: #ffffff;
-    --bubble-them: #383a40;    /* Discord Message Gray */
+    --bubble-them: #383a40;
     --bubble-them-text: #dbdee1;
     --system-msg: #60a5fa;
     --alert-bg: #da373c;
@@ -38,14 +38,11 @@ html, body, .discord-wrapper { height: 100%; width: 100%; overflow: hidden; back
 .hidden { display: none !important; }
 .alert { background: var(--alert-bg); color: var(--alert-text); padding: 10px; border-radius: 6px; text-align: center; font-size: 0.85rem; z-index: 100; margin-bottom: 12px; }
 
-/* --- Auth Card Placement --- */
 .center-card { width: 90%; max-width: 400px; margin: 100px auto; background: var(--bg-main); border: 1px solid var(--border); padding: 28px; border-radius: 8px; display: flex; flex-direction: column; gap: 16px; }
 .brand-title { text-align: center; font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.05em; }
 
-/* --- Core App Interface Layout --- */
 .discord-layout { display: flex; height: 100%; width: 100%; }
 
-/* SIDEBAR STYLING */
 .discord-sidebar { width: 260px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
 .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid var(--border); }
 .sidebar-header h2 { font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
@@ -65,13 +62,11 @@ html, body, .discord-wrapper { height: 100%; width: 100%; overflow: hidden; back
 .status-dot { width: 8px; height: 8px; background: #23a55a; border-radius: 50%; }
 .footer-buttons { display: flex; gap: 4px; }
 
-/* MAIN PANEL STYLING */
 .discord-main { flex-grow: 1; background-color: var(--bg-main); display: flex; flex-direction: column; padding: 16px; position: relative; }
 .empty-state { margin: auto; text-align: center; max-width: 360px; color: var(--text-muted); }
 .empty-icon { font-size: 3.5rem; margin-bottom: 12px; }
 .empty-state p { font-size: 0.9rem; margin-top: 6px; line-height: 1.4; }
 
-/* ACTIVE CHAT WORKSPACE */
 .active-chat-pane { display: flex; flex-direction: column; height: 100%; width: 100%; }
 .chat-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 8px; }
 .chat-title-info { display: flex; align-items: center; font-size: 1.1rem; font-weight: 600; }
@@ -90,7 +85,6 @@ html, body, .discord-wrapper { height: 100%; width: 100%; overflow: hidden; back
 #typing-indicator { height: 18px; font-size: 0.8rem; color: var(--text-muted); font-style: italic; padding-left: 4px; }
 .chat-input-area { display: flex; gap: 8px; align-items: flex-end; }
 
-/* Standard Controls Input Modifiers */
 .input-group { display: flex; flex-direction: column; gap: 4px; }
 .input-group label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
 input, textarea { background-color: var(--bg-inputs); color: var(--text); border: 1px solid transparent; border-radius: 4px; padding: 10px; font-size: 0.95rem; outline: none; width: 100%; }
@@ -98,7 +92,7 @@ input:focus, textarea:focus { border-color: #5865f2; }
 textarea { resize: none; max-height: 120px; border-radius: 8px; }
 
 button { font-size: 0.85rem; font-weight: 500; border-radius: 4px; padding: 8px 14px; cursor: pointer; border: none; }
-.btn-primary { background: #5865f2; color: #ffffff; } /* Discord Blurple */
+.btn-primary { background: #5865f2; color: #ffffff; }
 .btn-secondary { background: #4e5058; color: #ffffff; }
 .btn-text { background: transparent; color: var(--text-muted); }
 .btn-icon { background: transparent; font-size: 1.1rem; }
