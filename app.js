@@ -51,7 +51,23 @@ const userDisplayPfp = document.getElementById('user-display-pfp');
 const editPfpPreview = document.getElementById('edit-pfp-preview');
 const editRoomIconPreview = document.getElementById('edit-room-icon-preview');
 
-// Theme toggle logic (Can now be bound to a button inside user settings)
+// Mobile structural overlay caching elements
+const hamburgerBtn = document.getElementById('mobile-hamburger-btn');
+const sidebarElement = document.querySelector('.discord-sidebar');
+const backdropElement = document.getElementById('sidebar-backdrop');
+
+// --- MOBILE NAVIGATION EVENT DRAWER REGISTRATION ---
+hamburgerBtn?.addEventListener('click', () => {
+    sidebarElement?.classList.add('open');
+    backdropElement?.classList.add('active');
+});
+
+backdropElement?.addEventListener('click', () => {
+    sidebarElement?.classList.remove('open');
+    backdropElement?.classList.remove('active');
+});
+
+// Theme toggle logic 
 document.getElementById('theme-toggle')?.addEventListener('click', () => {
     document.body.classList.toggle('light-theme');
 });
@@ -111,6 +127,10 @@ document.getElementById('profile-nav-btn').addEventListener('click', () => {
     roomView.classList.add('hidden');
     roomSettingsCard.classList.add('hidden');
     profileCard.classList.remove('hidden');
+    
+    // Auto collapse the sidebar backdrop element overlay wrapper if open when user triggers profile cards
+    sidebarElement?.classList.remove('open');
+    backdropElement?.classList.remove('active');
     
     try { document.getElementById('edit-username-input').value = currentUsername || ""; } catch(e){}
     try { document.getElementById('edit-status-input').value = currentStatus || ""; } catch(e){}
@@ -329,6 +349,10 @@ function selectRoom(roomCode) {
     welcomeView.classList.add('hidden');
     roomView.classList.remove('hidden');
     cancelReply();
+
+    // Auto close mobile views upon channel selection interaction routine
+    sidebarElement?.classList.remove('open');
+    backdropElement?.classList.remove('active');
 
     if (currentRoomCode) set(ref(db, `rooms/${currentRoomCode}/typing/${currentUsername}`), null);
     detachActiveRoomListeners();
