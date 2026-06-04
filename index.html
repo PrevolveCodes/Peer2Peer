@@ -3,22 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P2P Chat</title>
+    <title>Discord Style Chat</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="dark-theme">
 
     <audio id="ping-sound" src="https://assets.mixkit.co/active_storage/sfx/2357/2357-84.wav" preload="auto"></audio>
 
-    <div class="app-container">
-        <header>
-            <h1>P2P Chat!</h1>
-            <button id="theme-toggle" class="btn-text">Light Mode</button>
-        </header>
-
-        <div id="alert-banner" class="alert hidden">You need to fill this in before chatting!</div>
-
-        <div id="auth-card" class="card">
+    <div class="discord-wrapper">
+        
+        <div id="auth-card" class="card center-card">
+            <h1 class="brand-title">forever.chat</h1>
             <h3 id="auth-title">Create an Account</h3>
             <div class="input-group">
                 <label for="auth-email">Email</label>
@@ -36,41 +31,79 @@
             <button id="auth-switch-btn" class="btn-text">Already have an account? Log In</button>
         </div>
 
-        <div id="lobby-card" class="card hidden">
-            <div class="lobby-header">
-                <span>Welcome, <strong id="user-display-name">...</strong></span>
-                <button id="logout-btn" class="btn-small">Log Out</button>
-            </div>
-            <hr>
-            <div class="input-group">
-                <label for="room-password-input">Room Password (To Protect/Join)</label>
-                <input type="password" id="room-password-input" placeholder="Enter group password">
-            </div>
-            <button id="create-btn" class="btn-primary">Create New Room</button>
-            <div class="divider">or join existing</div>
-            <div class="join-box">
-                <input type="text" id="room-code-input" placeholder="Room Code" maxlength="6">
-                <button id="join-btn" class="btn-secondary">Join</button>
-            </div>
-        </div>
-
-        <div id="room-card" class="card hidden">
-            <div class="room-header">
-                <div>
-                    <span class="label">Room:</span>
-                    <strong id="display-code">------</strong>
+        <div id="app-layout" class="discord-layout hidden">
+            
+            <aside class="discord-sidebar">
+                <div class="sidebar-header">
+                    <h2>Rooms</h2>
+                    <button id="theme-toggle" class="btn-icon">🌓</button>
                 </div>
-                <button id="leave-btn" class="btn-small">Leave Room</button>
-                <button id="copy-btn" class="btn-small">Copy Code</button>
-            </div>
 
-            <div id="chat-box"></div>
-            <div id="typing-indicator"></div>
+                <div id="room-menu-list" class="room-list-container">
+                    </div>
 
-            <div class="chat-input-area">
-                <textarea id="message-input" placeholder="Type a message..." rows="1"></textarea>
-                <button id="send-btn" class="btn-primary">Send</button>
-            </div>
+                <div class="sidebar-actions">
+                    <input type="text" id="sidebar-room-code" placeholder="Join Code" maxlength="6">
+                    <input type="password" id="sidebar-room-pass" placeholder="Room Password">
+                    <div class="action-buttons">
+                        <button id="join-room-btn" class="btn-small">Join Room</button>
+                        <button id="create-room-btn" class="btn-small btn-primary">Create Room</button>
+                    </div>
+                </div>
+
+                <div class="sidebar-footer">
+                    <div class="user-info">
+                        <span class="status-dot"></span>
+                        <strong id="user-display-name">...</strong>
+                    </div>
+                    <div class="footer-buttons">
+                        <button id="profile-nav-btn" class="btn-text">⚙️</button>
+                        <button id="logout-btn" class="btn-text danger-text">Log Out</button>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="discord-main">
+                <div id="alert-banner" class="alert hidden">Warning banner...</div>
+
+                <div id="profile-card" class="card center-card hidden">
+                    <h3>Edit Profile</h3>
+                    <div class="input-group">
+                        <label for="edit-username-input">Update Username</label>
+                        <input type="text" id="edit-username-input" placeholder="New Username" maxlength="15">
+                    </div>
+                    <button id="save-profile-btn" class="btn-primary">Save Changes</button>
+                    <button id="close-profile-btn" class="btn-secondary">Close Settings</button>
+                </div>
+
+                <div id="welcome-view" class="empty-state">
+                    <div class="empty-icon">💬</div>
+                    <h2>Welcome to forever.chat</h2>
+                    <p>Select a room from the menu sidebar or create a new room to start texting your friends!</p>
+                </div>
+
+                <div id="room-view" class="active-chat-pane hidden">
+                    <div class="chat-header">
+                        <div class="chat-title-info">
+                            <span class="hashtag">#</span>
+                            <span id="active-room-title">------</span>
+                        </div>
+                        <div class="header-actions">
+                            <button id="copy-btn" class="btn-small">Copy Room Code</button>
+                            <button id="remove-room-btn" class="btn-small danger-outline">Remove From List</button>
+                        </div>
+                    </div>
+
+                    <div id="chat-box"></div>
+                    <div id="typing-indicator"></div>
+
+                    <div class="chat-input-area">
+                        <textarea id="message-input" placeholder="Message room..." rows="1"></textarea>
+                        <button id="send-btn" class="btn-primary">Send</button>
+                    </div>
+                </div>
+            </main>
+
         </div>
     </div>
 
