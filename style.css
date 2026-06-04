@@ -296,3 +296,37 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 4px 0; }
     gap: 16px;
     margin-top: 4px;
 }
+
+/* Ensure all layout SVGs inherit and render clean visual fills */
+svg {
+    fill: currentColor !important;
+}
+
+/* Fix Chat Input Flex Container to keep components side-by-side */
+.input-container-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+    background-color: var(--bg-inputs) !important;
+    padding: 8px 12px !important;
+    border-radius: 8px !important;
+}
+
+/* Keep Send Button sized properly next to input */
+#send-btn {
+    padding: 6px 14px !important;
+    height: 34px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    width: auto !important;
+}
+
+/* Force Textarea to expand nicely but leave space for buttons */
+#message-input {
+    flex-grow: 1 !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 4px 0 !important;
+    color: var(--text) !important;
+}
