@@ -91,6 +91,9 @@ document.getElementById('profile-nav-btn').addEventListener('click', () => {
     document.getElementById('edit-username-input').value = currentUsername;
     document.getElementById('edit-status-input').value = currentStatus;
     document.getElementById('edit-color-input').value = currentTextColor;
+    document.getElementById('edit-pronouns-input').value = currentPronouns || "";
+    document.getElementById('edit-aboutme-input').value = currentAboutMe || "";
+    document.getElementById('edit-banner-color-input').value = currentBannerColor || "#5865f2";
     editPfpPreview.src = currentPfpData || fallbackSvg;
 });
 
@@ -133,24 +136,31 @@ document.getElementById('save-room-settings-btn').addEventListener('click', asyn
 });
 
 document.getElementById('save-profile-btn').addEventListener('click', async () => {
-    const newName = document.getElementById('edit-username-input').value.trim();
-    const newStatus = document.getElementById('edit-status-input').value.trim();
-    const newColor = document.getElementById('edit-color-input').value;
-    const newPfp = editPfpPreview.src;
+const newName = document.getElementById('edit-username-input').value.trim();
+const newStatus = document.getElementById('edit-status-input').value.trim();
+const newColor = document.getElementById('edit-color-input').value;
+const newPfp = editPfpPreview.src;
+// New fields to capture:
+const newPronouns = document.getElementById('edit-pronouns-input').value.trim();
+const newAboutMe = document.getElementById('edit-aboutme-input').value.trim();
+const newBanner = document.getElementById('edit-banner-color-input').value;
 
-    if (!newName) return showAlert("Username cannot be empty!");
-    try {
-        await updateProfile(auth.currentUser, { displayName: newName });
-        await update(ref(db, `users/${currentUid}/profile`), {
-            username: newName,
-            statusText: newStatus,
-            colorAccent: newColor,
-            avatarData: newPfp
-        });
-        profileCard.classList.add('hidden');
-        if (currentRoomCode) roomView.classList.remove('hidden');
-        else welcomeView.classList.remove('hidden');
-    } catch (e) { showAlert(e.message); }
+if (!newName) return showAlert("Username cannot be empty!");
+try {
+    await updateProfile(auth.currentUser, { displayName: newName });
+    await update(ref(db, `users/${currentUid}/profile`), {
+        username: newName,
+        statusText: newStatus,
+        colorAccent: newColor,
+        avatarData: newPfp,
+        pronouns: newPronouns,
+        aboutMe: newAboutMe,
+        bannerColor: newBanner
+    });
+    profileCard.classList.add('hidden');
+    if (currentRoomCode) roomView.classList.remove('hidden');
+    else welcomeView.classList.remove('hidden');
+} catch (e) { showAlert(e.message); }
 });
 
 document.getElementById('auth-switch-btn').addEventListener('click', (e) => {
@@ -194,6 +204,10 @@ onAuthStateChanged(auth, (user) => {
             currentStatus = data.statusText || "";
             currentTextColor = data.colorAccent || "#ffffff";
             currentPfpData = data.avatarData || fallbackSvg;
+            // Global handles for tracking our added variables:
+            window.currentPronouns = data.pronouns || "";
+            window.currentAboutMe = data.aboutMe || "";
+            window.currentBannerColor = data.bannerColor || "#5865f2";
 
             document.getElementById('user-display-name').innerText = currentUsername;
             document.getElementById('user-custom-status').innerText = currentStatus;
