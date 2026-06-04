@@ -103,8 +103,13 @@ document.getElementById('profile-nav-btn').addEventListener('click', () => {
 
 document.getElementById('close-profile-btn').addEventListener('click', () => {
     profileCard.classList.add('hidden');
-    if (currentRoomCode) roomView.classList.remove('hidden');
-    else welcomeView.classList.remove('hidden');
+    // Force the main application window back into active flex status
+    if (currentRoomCode) {
+        roomView.classList.remove('hidden');
+        roomView.style.display = 'flex'; 
+    } else {
+        welcomeView.classList.remove('hidden');
+    }
 });
 
 document.getElementById('room-settings-btn').addEventListener('click', async () => {
@@ -162,8 +167,12 @@ try {
         bannerColor: newBanner
     });
     profileCard.classList.add('hidden');
-    if (currentRoomCode) roomView.classList.remove('hidden');
-    else welcomeView.classList.remove('hidden');
+    if (currentRoomCode) {
+        roomView.classList.remove('hidden');
+        roomView.style.display = 'flex';
+    } else {
+        welcomeView.classList.remove('hidden');
+    }
 } catch (e) { showAlert(e.message); }
 });
 
