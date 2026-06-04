@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P Minimal Chat</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body class="dark-theme"> <div class="app-container">
+        <header>
+            <h1>p2p.chat</h1>
+            <button id="theme-toggle" class="btn-text">Light Mode</button>
+        </header>
+
+        <div id="lobby" class="card">
+            <div class="input-group">
+                <label for="username-input">Choose a Username</label>
+                <input type="text" id="username-input" placeholder="e.g., Alex" maxlength="15">
+            </div>
+            
+            <hr>
+
+            <button id="create-btn" class="btn-primary">Create New Room</button>
+            
+            <div class="divider">or join existing</div>
+            
+            <div class="join-box">
+                <input type="text" id="room-code-input" placeholder="Enter Room Code" maxlength="6">
+                <button id="join-btn" class="btn-secondary">Join</button>
+            </div>
+        </div>
+
+        <div id="room" class="card hidden">
+            <div class="room-header">
+                <div>
+                    <span class="label">Room Code:</span>
+                    <strong id="display-code">------</strong>
+                </div>
+                <button id="copy-btn" class="btn-small">Copy Code</button>
+            </div>
+
+            <div id="chat-box"></div>
+            
+            <div id="typing-indicator"></div>
+
+            <div class="chat-input-area">
+                <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+                <button id="send-btn" class="btn-primary">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
