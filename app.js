@@ -92,12 +92,12 @@ document.getElementById('profile-nav-btn').addEventListener('click', () => {
     roomSettingsCard.classList.add('hidden');
     profileCard.classList.remove('hidden');
     
-    document.getElementById('edit-username-input').value = currentUsername;
-    document.getElementById('edit-status-input').value = currentStatus;
-    document.getElementById('edit-color-input').value = currentTextColor;
-    document.getElementById('edit-pronouns-input').value = currentPronouns;
-    document.getElementById('edit-aboutme-input').value = currentAboutMe;
-    document.getElementById('edit-banner-color-input').value = currentBannerColor;
+    document.getElementById('edit-username-input').value = currentUsername || "";
+    document.getElementById('edit-status-input').value = currentStatus || "";
+    document.getElementById('edit-color-input').value = currentTextColor || "#ffffff";
+    document.getElementById('edit-pronouns-input').value = currentPronouns || "";
+    document.getElementById('edit-aboutme-input').value = currentAboutMe || "";
+    document.getElementById('edit-banner-color-input').value = currentBannerColor || "#5865f2";
     editPfpPreview.src = currentPfpData || fallbackSvg;
 });
 
