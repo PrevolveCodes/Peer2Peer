@@ -330,3 +330,81 @@ svg {
     padding: 4px 0 !important;
     color: var(--text) !important;
 }
+
+/* FULL FIX FOR PROFILE MODAL WINDOW CONTENT VISIBILITY */
+#profile-card {
+    display: flex !important;
+    flex-direction: column !important;
+    background-color: #313338 !important; /* Force a dark Discord-style modal background */
+    color: #ffffff !important;
+    width: 100% !important;
+    max-width: 480px !important;
+    padding: 20px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+    margin: 20px auto !important;
+}
+
+#profile-card .input-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin-bottom: 14px !important;
+}
+
+#profile-card label {
+    font-size: 0.75rem !important;
+    color: #b5bac1 !important;
+    text-transform: uppercase !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em;
+}
+
+#profile-card input[type="text"], 
+#profile-card textarea {
+    background-color: #1e1f22 !important; /* Dark input fields */
+    color: #f2f3f5 !important;
+    border: 1px solid #2b2d31 !important;
+    border-radius: 4px !important;
+    padding: 10px !important;
+    font-size: 0.95rem !important;
+    width: 100% !important;
+    outline: none !important;
+}
+
+#profile-card input:focus, 
+#profile-card textarea:focus {
+    border-color: #5865f2 !important;
+}
+
+/* Ensure the layout for avatar updates uses clear row spacing */
+.pfp-edit-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+    margin-top: 4px !important;
+    width: 100% !important;
+}
+
+.pfp-edit-row img {
+    width: 64px !important;
+    height: 64px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    background-color: #1e1f22 !important;
+    border: 2px solid #5865f2 !important;
+}
+
+/* Color picker section spacing */
+.color-picker-grid {
+    display: flex !important;
+    gap: 16px !important;
+    flex-wrap: wrap !important;
+    margin-top: 4px !important;
+}
+
+.color-picker-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
