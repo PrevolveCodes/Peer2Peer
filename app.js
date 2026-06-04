@@ -92,21 +92,23 @@ document.getElementById('profile-nav-btn').addEventListener('click', () => {
     roomSettingsCard.classList.add('hidden');
     profileCard.classList.remove('hidden');
     
-    document.getElementById('edit-username-input').value = currentUsername || "";
-    document.getElementById('edit-status-input').value = currentStatus || "";
-    document.getElementById('edit-color-input').value = currentTextColor || "#ffffff";
-    document.getElementById('edit-pronouns-input').value = currentPronouns || "";
-    document.getElementById('edit-aboutme-input').value = currentAboutMe || "";
-    document.getElementById('edit-banner-color-input').value = currentBannerColor || "#5865f2";
+    // Using try-catch blocks ensures that if a field is missing, the whole app won't freeze
+    try { document.getElementById('edit-username-input').value = currentUsername || ""; } catch(e){}
+    try { document.getElementById('edit-status-input').value = currentStatus || ""; } catch(e){}
+    try { document.getElementById('edit-color-input').value = currentTextColor || "#ffffff"; } catch(e){}
+    try { document.getElementById('edit-pronouns-input').value = window.currentPronouns || ""; } catch(e){}
+    try { document.getElementById('edit-aboutme-input').value = window.currentAboutMe || ""; } catch(e){}
+    try { document.getElementById('edit-banner-color-input').value = window.currentBannerColor || "#5865f2"; } catch(e){}
+    
     editPfpPreview.src = currentPfpData || fallbackSvg;
 });
 
-document.getElementById('close-profile-btn').addEventListener('click', () => {
+document.getElementById('close-profile-btn').addEventListener('click', (e) => {
+    e.preventDefault(); // Stop any default form submissions
     profileCard.classList.add('hidden');
-    // Force the main application window back into active flex status
     if (currentRoomCode) {
         roomView.classList.remove('hidden');
-        roomView.style.display = 'flex'; 
+        roomView.style.setProperty('display', 'flex', 'important');
     } else {
         welcomeView.classList.remove('hidden');
     }
@@ -144,36 +146,44 @@ document.getElementById('save-room-settings-btn').addEventListener('click', asyn
     document.getElementById('active-room-title').innerText = targetName;
 });
 
-document.getElementById('save-profile-btn').addEventListener('click', async () => {
-const newName = document.getElementById('edit-username-input').value.trim();
-const newStatus = document.getElementById('edit-status-input').value.trim();
-const newColor = document.getElementById('edit-color-input').value;
-const newPfp = editPfpPreview.src;
-// New fields to capture:
-const newPronouns = document.getElementById('edit-pronouns-input').value.trim();
-const newAboutMe = document.getElementById('edit-aboutme-input').value.trim();
-const newBanner = document.getElementById('edit-banner-color-input').value;
+document.getElementById('save-profile-btn').addEventListener('click', async (e) => {
+    e.preventDefault();
+    
+    const newName = document.getElementById('edit-username-input')?.value.trim() || currentUsername;
+    const newStatus = document.getElementById('edit-status-input')?.value.trim() || "";
+    const newColor = document.getElementById('edit-color-input')?.value || "#ffffff";
+    const newPfp = editPfpPreview.src || fallbackSvg;
+    
+    const newPronouns = document.getElementById('edit-pronouns-input')?.value.trim() || "";
+    const newAboutMe = document.getElementById('edit-aboutme-input')?.value.trim() || "";
+    const newBanner = document.getElementById('edit-banner-color-input')?.value || "#5865f2";
 
-if (!newName) return showAlert("Username cannot be empty!");
-try {
-    await updateProfile(auth.currentUser, { displayName: newName });
-    await update(ref(db, `users/${currentUid}/profile`), {
-        username: newName,
-        statusText: newStatus,
-        colorAccent: newColor,
-        avatarData: newPfp,
-        pronouns: newPronouns,
-        aboutMe: newAboutMe,
-        bannerColor: newBanner
-    });
-    profileCard.classList.add('hidden');
-    if (currentRoomCode) {
-        roomView.classList.remove('hidden');
-        roomView.style.display = 'flex';
-    } else {
-        welcomeView.classList.remove('hidden');
+    if (!newName) return showAlert("Username cannot be empty!");
+    
+    try {
+        if (auth.currentUser) {
+            await updateProfile(auth.currentUser, { displayName: newName });
+        }
+        await update(ref(db, `users/${currentUid}/profile`), {
+            username: newName,
+            statusText: newStatus,
+            colorAccent: newColor,
+            avatarData: newPfp,
+            pronouns: newPronouns,
+            aboutMe: newAboutMe,
+            bannerColor: newBanner
+        });
+        
+        profileCard.classList.add('hidden');
+        if (currentRoomCode) {
+            roomView.classList.remove('hidden');
+            roomView.style.setProperty('display', 'flex', 'important');
+        } else {
+            welcomeView.classList.remove('hidden');
+        }
+    } catch (err) { 
+        showAlert("Error saving profile: " + err.message); 
     }
-} catch (e) { showAlert(e.message); }
 });
 
 document.getElementById('auth-switch-btn').addEventListener('click', (e) => {
