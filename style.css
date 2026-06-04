@@ -261,6 +261,34 @@ body.light-theme .bubble-user { color: #111111; }
 #profile-card.hidden {
     display: none !important;
 }
+
+/* Clean up the input spacing and labels inside the modal */
+#profile-card .input-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin-bottom: 14px !important;
+}
+
+#profile-card label {
+    font-size: 0.75rem !important;
+    color: #b5bac1 !important;
+    text-transform: uppercase !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em;
+}
+
+#profile-card input[type="text"], 
+#profile-card textarea {
+    background-color: #1e1f22 !important;
+    color: #f2f3f5 !important;
+    border: 1px solid #2b2d31 !important;
+    border-radius: 4px !important;
+    padding: 10px !important;
+    font-size: 0.95rem !important;
+    width: 100% !important;
+    outline: none !important;
+}
 #profile-card input:focus, #profile-card textarea:focus { border-color: #5865f2 !important; }
 
 /* Specific structures inside the card window layout */
