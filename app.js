@@ -26,7 +26,10 @@ let currentRoomCode = null;
 let isSignUpMode = true;
 let typingTimeout = null;
 let activeRoomListeners = [];
-let replyMessageId = null; 
+let replyMessageId = null;
+let currentPronouns = "";
+let currentAboutMe = "";
+let currentBannerColor = "#5865f2";
 let targetReplyUser = "";
 
 const fallbackSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23949ba4'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>";
@@ -88,12 +91,13 @@ document.getElementById('profile-nav-btn').addEventListener('click', () => {
     roomView.classList.add('hidden');
     roomSettingsCard.classList.add('hidden');
     profileCard.classList.remove('hidden');
+    
     document.getElementById('edit-username-input').value = currentUsername;
     document.getElementById('edit-status-input').value = currentStatus;
     document.getElementById('edit-color-input').value = currentTextColor;
-    document.getElementById('edit-pronouns-input').value = currentPronouns || "";
-    document.getElementById('edit-aboutme-input').value = currentAboutMe || "";
-    document.getElementById('edit-banner-color-input').value = currentBannerColor || "#5865f2";
+    document.getElementById('edit-pronouns-input').value = currentPronouns;
+    document.getElementById('edit-aboutme-input').value = currentAboutMe;
+    document.getElementById('edit-banner-color-input').value = currentBannerColor;
     editPfpPreview.src = currentPfpData || fallbackSvg;
 });
 
@@ -204,10 +208,9 @@ onAuthStateChanged(auth, (user) => {
             currentStatus = data.statusText || "";
             currentTextColor = data.colorAccent || "#ffffff";
             currentPfpData = data.avatarData || fallbackSvg;
-            // Global handles for tracking our added variables:
-            window.currentPronouns = data.pronouns || "";
-            window.currentAboutMe = data.aboutMe || "";
-            window.currentBannerColor = data.bannerColor || "#5865f2";
+            currentPronouns = data.pronouns || "";
+            currentAboutMe = data.aboutMe || "";
+            currentBannerColor = data.bannerColor || "#5865f2";
 
             document.getElementById('user-display-name').innerText = currentUsername;
             document.getElementById('user-custom-status').innerText = currentStatus;
