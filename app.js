@@ -82,6 +82,7 @@ document.getElementById('edit-room-icon-file').addEventListener('change', async 
     if (res) editRoomIconPreview.src = res;
 });
 
+// Settings button binding
 document.getElementById('profile-nav-btn').addEventListener('click', () => {
     welcomeView.classList.add('hidden');
     roomView.classList.add('hidden');
@@ -320,13 +321,11 @@ function detachActiveRoomListeners() {
     activeRoomListeners = [];
 }
 
-// FORMATTED UNIFORM DISCORD MESSAGES WITH FLAT HIGH-CONTRAST TEXT
+// FORMATTED UNIFORM DISCORD MESSAGES WITH FLAT HIGH-CONTRAST SVG ASSETS
 function appendBubble(msgId, data, triggerSound) {
     const identity = data.sender === currentUsername ? 'me' : 'them';
     const colorStyle = data.senderColor ? `style="color: ${data.senderColor};"` : '';
     const userAvatar = data.senderAvatar || fallbackSvg;
-    
-    // Convert timestamp into human readable clean string 
     const timeString = data.timestamp ? new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
 
     let mediaHtml = '';
@@ -352,13 +351,17 @@ function appendBubble(msgId, data, triggerSound) {
             const count = Object.keys(usersObj).length;
             const amIReacted = usersObj[currentUid] ? 'active' : '';
             if (count > 0) {
-                reactionsHtml += `<span class="react-badge ${amIReacted}" onclick="window.toggleReaction('${msgId}', '${emoji}')">${emoji} <span>${count}</span></span>`;
+                // Vector alternatives map to maintain inline visual integrity
+                let displayIcon = emoji;
+                if(emoji === '👍') displayIcon = `<svg style="width:12px;height:12px;display:inline-block;" viewBox="0 0 24 24"><path fill="currentColor" d="M23 10a2 2 0 0 0-2-2h-6.32l.96-4.57c.02-.1.03-.21.03-.32c0-.41-.17-.79-.44-1.06L14.17 1L7.59 7.58C7.22 7.95 7 8.45 7 9v10a2 2 0 0 0 2 2h9c.75 0 1.41-.41 1.76-1.03l3.57-8.34c.04-.15.07-.31.07-.47V10M1 9v12h4V9H1z"/></svg>`;
+                if(emoji === '❤️') displayIcon = `<svg style="width:12px;height:12px;display:inline-block;" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+                
+                reactionsHtml += `<span class="react-badge ${amIReacted}" onclick="window.toggleReaction('${msgId}', '${emoji}')">${displayIcon} <span>${count}</span></span>`;
             }
         });
     }
     reactionsHtml += '</div>';
 
-    // Perfectly styled linear row that matches Discord layout alignment
     const html = `
         <div class="bubble-row" id="row-${msgId}">
             <img class="bubble-avatar-side" src="${userAvatar}" onclick="window.inspectUserAccount('${data.senderUid}')">
@@ -373,7 +376,7 @@ function appendBubble(msgId, data, triggerSound) {
                 ${reactionsHtml}
                 
                 <div class="bubble-menu-strip">
-                    <button class="strip-btn" title="Reply" onclick="window.triggerReplySetup('${msgId}', '${data.sender}', '${data.text.substring(0,20)}')">
+                    <button class="strip-btn" title="Reply Message" onclick="window.triggerReplySetup('${msgId}', '${data.sender}', '${data.text.substring(0,20)}')">
                         <svg viewBox="0 0 24 24"><path fill="currentColor" d="M10 9V5l-7 7l7 7v-4.1c5 0 8.5 1.6 11 5.1c-1-5-4-10-11-11z"/></svg>
                     </button>
                     <button class="strip-btn" title="Thumbs Up" onclick="window.toggleReaction('${msgId}', '👍')">
@@ -386,7 +389,7 @@ function appendBubble(msgId, data, triggerSound) {
                         <svg viewBox="0 0 24 24"><path fill="currentColor" d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
                     </button>
                     ${identity === 'me' ? `
-                    <button class="strip-btn" title="Edit Message" onclick="window.triggerEditMessage('${msgId}', '${data.text}')">
+                    <button class="strip-btn" title="Edit Content" onclick="window.triggerEditMessage('${msgId}', '${data.text}')">
                         <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.000 1.000 0 0 0 0-1.41l-2.34-2.34a1.000 1.000 0 0 0-1.41 0l-1.83 1.83l3.75 3.75l1.83-1.83z"/></svg>
                     </button>
                     <button class="strip-btn danger-text" title="Delete Message" onclick="window.deleteMessage('${msgId}')">
