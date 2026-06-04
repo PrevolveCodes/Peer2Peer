@@ -22,6 +22,8 @@ const db = getDatabase(app);
 // State tracking variables
 let currentUid = null;
 let currentUsername = "";
+let currentStatus = "";
+let currentTextColor = "#22c55e"; // Default fallback
 let currentRoomCode = null;
 let isSignUpMode = true;
 let typingTimeout = null;
@@ -63,7 +65,11 @@ document.getElementById('profile-nav-btn').addEventListener('click', () => {
     welcomeView.classList.add('hidden');
     roomView.classList.add('hidden');
     profileCard.classList.remove('hidden');
+    
+    // Fill out settings panels with current user profile values
     document.getElementById('edit-username-input').value = currentUsername;
+    document.getElementById('edit-status-input').value = currentStatus;
+    document.getElementById('edit-color-input').value = currentTextColor;
 });
 
 document.getElementById('close-profile-btn').addEventListener('click', () => {
@@ -74,14 +80,25 @@ document.getElementById('close-profile-btn').addEventListener('click', () => {
 
 document.getElementById('save-profile-btn').addEventListener('click', async () => {
     const newName = document.getElementById('edit-username-input').value.trim();
+    const newStatus = document.getElementById('edit-status-input').value.trim();
+    const newColor = document.getElementById('edit-color-input').value;
+
     if (!newName) return showAlert("Name cannot be empty!");
+    
     try {
         await updateProfile(auth.currentUser, { displayName: newName });
-        currentUsername = newName;
-        document.getElementById('user-display-name').innerText = currentUsername;
+        
+        // Save metadata into global shared profile tree
+        await update(ref(db, `users/${currentUid}/profile`), {
+            username: newName,
+            statusText: newStatus,
+            colorAccent: newColor
+        });
+
         profileCard.classList.add('hidden');
         if (currentRoomCode) roomView.classList.remove('hidden');
         else welcomeView.classList.remove('hidden');
+        showAlert("Profile changes saved!");
     } catch (e) { showAlert(e.message); }
 });
 
@@ -103,6 +120,11 @@ document.getElementById('auth-submit-btn').addEventListener('click', async () =>
         if (isSignUpMode) {
             const res = await createUserWithEmailAndPassword(auth, email, password);
             await updateProfile(res.user, { displayName: username });
+            await set(ref(db, `users/${res.user.uid}/profile`), {
+                username: username,
+                statusText: "",
+                colorAccent: "#22c55e"
+            });
         } else { await signInWithEmailAndPassword(auth, email, password); }
     } catch (e) { showAlert(e.message); }
 });
@@ -112,10 +134,20 @@ document.getElementById('logout-btn').addEventListener('click', () => signOut(au
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUid = user.uid;
-        currentUsername = user.displayName || "User";
-        document.getElementById('user-display-name').innerText = currentUsername;
         authCard.classList.add('hidden');
         appLayout.classList.remove('hidden');
+
+        // Watch user profile variations dynamically
+        onValue(ref(db, `users/${currentUid}/profile`), (snapshot) => {
+            const data = snapshot.val() || {};
+            currentUsername = data.username || user.displayName || "User";
+            currentStatus = data.statusText || "";
+            currentTextColor = data.colorAccent || "#22c55e";
+
+            document.getElementById('user-display-name').innerText = currentUsername;
+            document.getElementById('user-custom-status').innerText = currentStatus;
+        });
+
         syncSidebarMenu();
     } else {
         detachActiveRoomListeners();
@@ -201,7 +233,6 @@ function selectRoom(roomCode) {
     document.getElementById('active-room-title').innerText = roomCode;
     chatBox.innerHTML = '';
 
-    // Update active highlight class state in menu
     Array.from(roomMenuList.children).forEach(el => {
         el.classList.toggle('active', el.innerText === roomCode);
     });
@@ -214,7 +245,7 @@ function selectRoom(roomCode) {
         snapshot.forEach(child => {
             const data = child.val();
             const id = data.sender === currentUsername ? 'me' : 'them';
-            appendBubble(data.sender, data.text, id, !isFirstLoad);
+            appendBubble(data.sender, data.text, id, data.senderColor, !isFirstLoad);
         });
     });
     activeRoomListeners.push({ ref: messagesRef, callback: msgListener });
@@ -236,11 +267,14 @@ function detachActiveRoomListeners() {
     activeRoomListeners = [];
 }
 
-function appendBubble(sender, text, identity, triggerSound = false) {
+function appendBubble(sender, text, identity, customColor, triggerSound = false) {
+    // If user has a custom color saved, apply it to their message text
+    const colorStyle = customColor ? `style="color: ${customColor};"` : '';
+    
     const html = `
         <div class="bubble-row ${identity}">
             <span class="bubble-user">${sender}</span>
-            <div class="bubble-text">${text}</div>
+            <div class="bubble-text" ${colorStyle}>${text}</div>
         </div>`;
     chatBox.innerHTML += html;
     chatBox.scrollTop = chatBox.scrollHeight;
@@ -259,6 +293,7 @@ async function sendMessage() {
     await push(ref(db, `rooms/${currentRoomCode}/messages`), {
         sender: currentUsername,
         text: text,
+        senderColor: currentTextColor, // Pass your profile theme color along with your text
         timestamp: Date.now()
     });
 
