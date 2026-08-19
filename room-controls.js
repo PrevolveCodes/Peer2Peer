@@ -1,0 +1,10 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+const config={apiKey:"AIzaSyAucXMpqBhYbZy1fSbkTKHX23y9bpx1hec",authDomain:"p2pminimalchat.firebaseapp.com",databaseURL:"https://p2pminimalchat-default-rtdb.firebaseio.com",projectId:"p2pminimalchat",storageBucket:"p2pminimalchat.firebasestorage.app",messagingSenderId:"37869407438",appId:"1:37869407438:web:63485dde33bb8710f8d49f",measurementId:"G-9JNKBE87C3"};
+const app=initializeApp(config,"room-controls");const auth=getAuth(app),db=getDatabase(app);let uid=null;
+onAuthStateChanged(auth,u=>{uid=u?.uid||null});
+function stop(e){e.preventDefault();e.stopImmediatePropagation()}
+function notice(t){const a=document.getElementById("alert-banner");if(a){a.textContent=t;a.classList.remove("hidden");setTimeout(()=>a.classList.add("hidden"),3000)}}
+function wire(){const create=document.getElementById("create-room-btn"),join=document.getElementById("join-room-btn");if(!create||!join)return;create.addEventListener("click",async e=>{stop(e);if(!uid)return;const code=Math.random().toString(36).substring(2,8).toUpperCase();await set(ref(db,`rooms/${code}/meta`),{roomName:`Room-${code}`,roomIcon:""});await set(ref(db,`users/${uid}/joinedRooms/${code}`),true);location.reload()},true);join.addEventListener("click",async e=>{stop(e);if(!uid)return;const code=document.getElementById("sidebar-room-code")?.value.trim().toUpperCase();if(!code)return notice("Enter a room code.");const snap=await get(ref(db,`rooms/${code}/meta`));if(!snap.exists())return notice("Room not found.");await set(ref(db,`users/${uid}/joinedRooms/${code}`),true);location.reload()},true)}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wire);else wire();
