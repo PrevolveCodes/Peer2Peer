@@ -1,0 +1,17 @@
+/* Hover-button fixes: hover effects only apply on devices that actually support hover. */
+@media (hover: hover) and (pointer: fine){
+  .message-actions{opacity:0;pointer-events:none;transform:translateY(3px)}
+  .message:hover .message-actions,.message-actions:hover{opacity:1;pointer-events:auto;transform:translateY(0)}
+  .message-actions button:hover,.list-item:hover,.people-user:hover,.room-cog:hover,.add-friend-button:hover,.header-action:hover,.people-header button:hover,.reaction-pill:hover,.emoji-button:hover{transition:background .12s ease,color .12s ease,border-color .12s ease}
+}
+
+/* Touch devices: don't leave controls in a fake hover state. */
+@media (hover: none), (pointer: coarse){
+  .message-actions{opacity:1;pointer-events:auto;transform:none;position:static;box-shadow:none;margin-left:auto;align-self:flex-start}
+  .message-actions button:focus,.message-actions button:active{background:var(--panel2);color:var(--text)}
+  .list-item:focus,.people-user:focus,.room-cog:focus,.add-friend-button:focus,.header-action:focus,.people-header button:focus,.reaction-pill:focus,.emoji-button:focus{outline:2px solid var(--accent);outline-offset:1px}
+  button:hover{background:initial}
+}
+
+/* Keyboard users still get a clear state without triggering a permanent hover look. */
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
