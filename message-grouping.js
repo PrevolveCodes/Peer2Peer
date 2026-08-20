@@ -7,9 +7,10 @@ style.textContent = `
 .message.message-grouped .message-body > b { display: none; }
 .message.message-grouped { margin-top: 2px; padding-top: 2px !important; padding-bottom: 2px !important; }
 .message.message-group-start { margin-top: 10px; }
-.message-group-timestamp { display: none; font-size: 11px; color: var(--muted); margin: 0 0 4px 52px; }
-.message.message-show-timestamp .message-group-timestamp { display: block; }
+.message-group-timestamp { display: none !important; font-size: 11px; color: var(--muted); margin: 0 0 4px 52px; }
+.message.message-show-timestamp .message-group-timestamp { display: block !important; }
 .message.message-show-timestamp { margin-top: 14px; }
+.message .message-body > small { display: none !important; }
 `;
 document.head.appendChild(style);
 
@@ -59,6 +60,9 @@ function regroupMessages() {
   messages.forEach((message, index) => {
     message.classList.remove('message-grouped', 'message-group-start', 'message-show-timestamp');
 
+    const oldTimestamp = message.querySelector('.message-group-timestamp');
+    if (oldTimestamp) oldTimestamp.remove();
+
     const sender = senderId(message);
     const time = messageTime(message);
     let gap = Infinity;
@@ -68,13 +72,15 @@ function regroupMessages() {
       if (gap < 0) gap += 24 * 60 * 60 * 1000;
     }
 
-    const sameGroup = index > 0 && sender && sender === previousSender && gap <= GROUP_GAP_MS;
+    const sameGroup = index > 0 && sender && sender === previousSender && gap < GROUP_GAP_MS;
 
     if (sameGroup) {
       message.classList.add('message-grouped');
     } else {
       message.classList.add('message-group-start');
-      if (index === 0 || gap >= TIMESTAMP_GAP_MS) {
+      // No timestamp on the first message. A timestamp only appears when
+      // a new message starts after at least 5 minutes of silence.
+      if (index > 0 && gap >= TIMESTAMP_GAP_MS) {
         ensureTimestamp(message);
         message.classList.add('message-show-timestamp');
       }
@@ -91,9 +97,7 @@ function watchMessages() {
   container.dataset.groupingReady = '1';
   regroupMessages();
 
-  const observer = new MutationObserver(() => {
-    requestAnimationFrame(regroupMessages);
-  });
+  const observer = new MutationObserver(() => requestAnimationFrame(regroupMessages));
   observer.observe(container, {childList: true, subtree: true});
 }
 
