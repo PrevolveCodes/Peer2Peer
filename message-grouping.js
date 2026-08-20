@@ -4,18 +4,27 @@ const style = document.createElement('style');
 style.textContent = `
 .message.message-grouped .message-avatar { visibility: hidden; }
 .message.message-grouped .message-body > b { display: none; }
-.message.message-grouped { margin-top: 2px; }
+.message.message-grouped { margin-top: 2px; padding-top: 2px !important; padding-bottom: 2px !important; }
 .message.message-group-start { margin-top: 10px; }
 `;
 document.head.appendChild(style);
 
+function captureMessageTimes(container) {
+  [...container.querySelectorAll('.message')].forEach(message => {
+    if (message.dataset.groupTime) return;
+    const small = message.querySelector('.message-body > small');
+    if (!small) return;
+    const value = small.textContent.trim();
+    const parsed = new Date(`1970-01-01 ${value}`);
+    if (!Number.isNaN(parsed.getTime())) {
+      message.dataset.groupTime = String(parsed.getHours() * 60 * 60 * 1000 + parsed.getMinutes() * 60 * 1000);
+    }
+  });
+}
+
 function messageTime(message) {
-  const small = message.querySelector('.message-body > small');
-  if (!small) return null;
-  const value = small.textContent.trim();
-  const parsed = new Date(`1970-01-01 ${value}`);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.getHours() * 60 * 60 * 1000 + parsed.getMinutes() * 60 * 1000;
+  const stored = Number(message.dataset.groupTime);
+  return Number.isFinite(stored) && message.dataset.groupTime ? stored : null;
 }
 
 function senderId(message) {
@@ -26,7 +35,8 @@ function regroupMessages() {
   const container = document.getElementById('messages');
   if (!container) return;
 
-  const messages = [...container.querySelectorAll('.message')];
+  captureMessageTimes(container);
+  const messages = [...container.querySelectorAll(':scope > .message')];
   let previousSender = null;
   let previousTime = null;
 
@@ -42,7 +52,7 @@ function regroupMessages() {
       if (gap < 0) gap += 24 * 60 * 60 * 1000;
     }
 
-    const sameGroup = sender && sender === previousSender && gap < GROUP_GAP_MS;
+    const sameGroup = sender && sender === previousSender && gap <= GROUP_GAP_MS;
 
     if (sameGroup) {
       message.classList.add('message-grouped');
@@ -61,7 +71,9 @@ function watchMessages() {
   container.dataset.groupingReady = '1';
   regroupMessages();
 
-  const observer = new MutationObserver(() => regroupMessages());
+  const observer = new MutationObserver(() => {
+    requestAnimationFrame(regroupMessages);
+  });
   observer.observe(container, {childList: true, subtree: true});
 }
 
