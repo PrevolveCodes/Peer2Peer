@@ -18,7 +18,7 @@ if(sub==='Room'){
   const joined=await get(ref(db,`users/${me.uid}/joinedRooms`));const codes=Object.keys(joined.val()||{});for(const code of codes){const snap=await get(ref(db,`rooms/${code}/meta`));const room=snap.val()||{};if((room.name||code)===title)return `rooms/${code}`}
 }
 return null}
-async function attach(){const composer=$('msg');if(!composer)return;if(composer.dataset.typingReady)return;composer.dataset.typingReady='1';const path=await resolvePath();if(!path)return;currentPath=path;typingListener=onValue(ref(db,typingBase(path)),s=>renderTyping(s.val()||{}));composer.addEventListener('input',()=>{if(composer.value.trim())setTyping(path);else stopTyping()});composer.addEventListener('blur',stopTyping)}
+async function attach(){const composer=$('msg');if(!composer)return;if(composer.dataset.typingReady)return;composer.dataset.typingReady='1';stopTyping();if(typingListener){typingListener();typingListener=null}const path=await resolvePath();if(!path)return;currentPath=path;typingListener=onValue(ref(db,typingBase(path)),s=>renderTyping(s.val()||{}));composer.addEventListener('input',()=>{if(composer.value.trim())setTyping(path);else stopTyping()});composer.addEventListener('blur',stopTyping)}
 function ensure(){const composer=$('msg');if(!composer)return;let el=$('typing-indicator');if(!el){el=document.createElement('div');el.id='typing-indicator';el.className='typing-indicator';composer.closest('.content')?.insertBefore(el,composer.closest('.composer'));}attach()}
 const observer=new MutationObserver(()=>{clearTimeout(lookupTimer);lookupTimer=setTimeout(ensure,50)});observer.observe(document.body,{childList:true,subtree:true});
 onAuthStateChanged(auth,user=>{me=user;if(user)ensure()});
