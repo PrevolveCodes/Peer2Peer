@@ -6,6 +6,9 @@
 <title>Peer2Peer</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="ui-join-button-fix.css">
+<style>
+.friend-row{display:flex;align-items:center;gap:4px;width:100%}.friend-row>.list-item{flex:1;min-width:0}.remove-friend-button{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:7px;padding:7px 8px;cursor:pointer;white-space:nowrap}.remove-friend-button:hover{color:#ff6b6b;border-color:#ff6b6b}.message-actions [data-fix-delete]{color:#ff6b6b}
+</style>
 </head>
 <body>
 <div id="auth" class="auth">
@@ -67,5 +70,6 @@
 <script type="module" src="room-settings-fix.js"></script>
 <script type="module" src="auth-fix.js"></script>
 <script type="module" src="ui-sidebar-people.js"></script>
+<script type="module" src="friend-message-actions.js"></script>
 </body>
 </html>
