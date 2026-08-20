@@ -6,6 +6,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const avatar=p=>p?.avatarData||p?.avatar||null;
 const avatarHTML=(p,n='R')=>avatar(p)?`<img src="${esc(avatar(p))}" alt="">`:`<span class="avatar-fallback">${esc((n||'R').trim().charAt(0).toUpperCase()||'R')}</span>`;
 const root=()=>document.getElementById('modal-root');
+const randomCode=()=>Math.random().toString(36).slice(2,10).toUpperCase();
 
 async function openRoomSettings(code){
  const uid=auth.currentUser?.uid;
@@ -37,4 +38,61 @@ async function openRoomSettings(code){
  }catch(e){console.error(e);alert(`Could not open room settings: ${e?.message||e}`)}
 }
 
+async function createInvite(code,button){
+ const uid=auth.currentUser?.uid;
+ if(!uid||!code)return;
+ try{
+  const s=await get(ref(db,`rooms/${code}/meta`)),room=s.val()||{};
+  if(room.owner!==uid){alert('Only the group leader can create an invite code.');return;}
+  let invite=room.inviteCode||randomCode();
+  await update(ref(db,`rooms/${code}/meta`),{inviteCode:invite});
+  button.textContent='Invite: '+invite;
+  button.title='Click to copy invite code';
+  try{await navigator.clipboard.writeText(invite);button.textContent='Invite copied: '+invite;setTimeout(()=>{if(document.body.contains(button))button.textContent='Invite: '+invite},1800)}catch{}
+ }catch(e){alert(`Could not create invite code: ${e?.message||e}`)}
+}
+
+async function addInviteButton(code){
+ const uid=auth.currentUser?.uid;if(!uid||!code)return;
+ const s=await get(ref(db,`rooms/${code}/meta`)),room=s.val()||{};
+ if(room.owner!==uid)return;
+ const actions=document.getElementById('header-actions');if(!actions)return;
+ if(document.getElementById('p2p-invite'))return;
+ const b=document.createElement('button');b.id='p2p-invite';b.className='header-action';b.textContent=room.inviteCode?`Invite: ${room.inviteCode}`:'Create invite code';b.title=room.inviteCode?'Click to copy invite code':'Create an invite code';b.onclick=()=>createInvite(code,b);actions.prepend(b);
+}
+
+async function joinByCodeOrInvite(){
+ const uid=auth.currentUser?.uid,field=document.getElementById('room-code');if(!uid||!field)return;
+ const input=field.value.trim().toUpperCase();if(!input)return alert('Enter a room code or invite code.');
+ try{
+  let code=input,metaSnap=await get(ref(db,`rooms/${code}/meta`));
+  if(!metaSnap.exists()){
+   const all=await get(ref(db,'rooms')),rooms=all.val()||{};
+   const found=Object.entries(rooms).find(([,r])=>String(r?.meta?.inviteCode||'').toUpperCase()===input);
+   if(found)code=found[0];else return alert('Room or invite code not found.');
+   metaSnap=await get(ref(db,`rooms/${code}/meta`));
+  }
+  const room=metaSnap.val()||{};if(!room.owner)return alert('Invalid room.');
+  await update(ref(db),{[`users/${uid}/joinedRooms/${code}`]:true,[`rooms/${code}/members/${uid}`]:{uid,username:auth.currentUser.displayName||'User'}});
+  field.value='';if(typeof window.openRoom==='function')window.openRoom(code);else{document.querySelector(`[data-room="${CSS.escape(code)}"]`)?.click()}
+ }catch(e){console.error(e);alert(`Could not join room: ${e?.message||e}`)}
+}
+
 document.addEventListener('click',e=>{const b=e.target.closest('#room-list [data-room-settings]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();openRoomSettings(b.dataset.roomSettings)},true);
+document.addEventListener('click',e=>{const b=e.target.closest('#join-room');if(!b)return;e.preventDefault();e.stopImmediatePropagation();joinByCodeOrInvite()},true);
+
+const observer=new MutationObserver(()=>{
+ const title=document.getElementById('view-title');
+ if(!title)return;
+ const roomRow=document.querySelector('#room-list [data-room].room-name[aria-current="true"]');
+ const rows=[...document.querySelectorAll('#room-list [data-room]')];
+ const current=rows.find(r=>r.querySelector('span')?.textContent===title.textContent);
+ if(current)addInviteButton(current.dataset.room);
+});
+observer.observe(document.body,{subtree:true,childList:true});
+
+setInterval(async()=>{
+ const uid=auth.currentUser?.uid,title=document.getElementById('view-title');if(!uid||!title)return;
+ const rows=[...document.querySelectorAll('#room-list [data-room]')],current=rows.find(r=>r.querySelector('span')?.textContent===title.textContent);
+ if(current)await addInviteButton(current.dataset.room);
+},500);
