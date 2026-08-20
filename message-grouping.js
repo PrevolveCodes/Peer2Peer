@@ -1,4 +1,5 @@
 const GROUP_GAP_MS = 10 * 60 * 1000;
+const TIMESTAMP_GAP_MS = 5 * 60 * 1000;
 
 const style = document.createElement('style');
 style.textContent = `
@@ -6,6 +7,9 @@ style.textContent = `
 .message.message-grouped .message-body > b { display: none; }
 .message.message-grouped { margin-top: 2px; padding-top: 2px !important; padding-bottom: 2px !important; }
 .message.message-group-start { margin-top: 10px; }
+.message-group-timestamp { display: none; font-size: 11px; color: var(--muted); margin: 0 0 4px 52px; }
+.message.message-show-timestamp .message-group-timestamp { display: block; }
+.message.message-show-timestamp { margin-top: 14px; }
 `;
 document.head.appendChild(style);
 
@@ -18,6 +22,7 @@ function captureMessageTimes(container) {
     const parsed = new Date(`1970-01-01 ${value}`);
     if (!Number.isNaN(parsed.getTime())) {
       message.dataset.groupTime = String(parsed.getHours() * 60 * 60 * 1000 + parsed.getMinutes() * 60 * 1000);
+      message.dataset.groupTimeText = value;
     }
   });
 }
@@ -31,6 +36,17 @@ function senderId(message) {
   return message.querySelector('[data-profile-uid]')?.dataset.profileUid || '';
 }
 
+function ensureTimestamp(message) {
+  let timestamp = message.querySelector('.message-group-timestamp');
+  if (!timestamp) {
+    timestamp = document.createElement('div');
+    timestamp.className = 'message-group-timestamp';
+    const body = message.querySelector('.message-body');
+    if (body) body.parentNode.insertBefore(timestamp, body);
+  }
+  timestamp.textContent = message.dataset.groupTimeText || '';
+}
+
 function regroupMessages() {
   const container = document.getElementById('messages');
   if (!container) return;
@@ -40,8 +56,8 @@ function regroupMessages() {
   let previousSender = null;
   let previousTime = null;
 
-  messages.forEach(message => {
-    message.classList.remove('message-grouped', 'message-group-start');
+  messages.forEach((message, index) => {
+    message.classList.remove('message-grouped', 'message-group-start', 'message-show-timestamp');
 
     const sender = senderId(message);
     const time = messageTime(message);
@@ -52,12 +68,16 @@ function regroupMessages() {
       if (gap < 0) gap += 24 * 60 * 60 * 1000;
     }
 
-    const sameGroup = sender && sender === previousSender && gap <= GROUP_GAP_MS;
+    const sameGroup = index > 0 && sender && sender === previousSender && gap <= GROUP_GAP_MS;
 
     if (sameGroup) {
       message.classList.add('message-grouped');
     } else {
       message.classList.add('message-group-start');
+      if (index === 0 || gap >= TIMESTAMP_GAP_MS) {
+        ensureTimestamp(message);
+        message.classList.add('message-show-timestamp');
+      }
     }
 
     previousSender = sender;
