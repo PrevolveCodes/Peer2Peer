@@ -5,7 +5,7 @@ const style = document.createElement('style');
 style.textContent = `
 .message.message-grouped .message-avatar { visibility: hidden; }
 .message.message-grouped .message-body > b { display: none; }
-.message.message-grouped { margin-top: 0; padding-top: 0 !important; padding-bottom: 0 !important; }
+.message.message-grouped { margin-top: 2px; padding-top: 2px !important; padding-bottom: 2px !important; }
 .message.message-group-start { margin-top: 10px; }
 .message-group-timestamp { display: none !important; font-size: 11px; color: var(--muted); margin: 0 0 4px 52px; }
 .message.message-show-timestamp .message-group-timestamp { display: block !important; }
@@ -78,8 +78,6 @@ function regroupMessages() {
       message.classList.add('message-grouped');
     } else {
       message.classList.add('message-group-start');
-      // No timestamp on the first message. A timestamp only appears when
-      // a new message starts after at least 5 minutes of silence.
       if (index > 0 && gap >= TIMESTAMP_GAP_MS) {
         ensureTimestamp(message);
         message.classList.add('message-show-timestamp');
