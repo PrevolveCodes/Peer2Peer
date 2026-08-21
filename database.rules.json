@@ -1,0 +1,88 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "profile": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid === $uid"
+        },
+        "friends": {
+          "$friendUid": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && (auth.uid === $uid || auth.uid === $friendUid)"
+          }
+        },
+        "joinedRooms": {
+          "$roomCode": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && auth.uid === $uid"
+          }
+        }
+      }
+    },
+
+    "userDirectory": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "friendRequests": {
+      "$recipientUid": {
+        "$senderUid": {
+          ".read": "auth != null && (auth.uid === $recipientUid || auth.uid === $senderUid)",
+          ".write": "auth != null && (auth.uid === $recipientUid || auth.uid === $senderUid)"
+        }
+      }
+    },
+
+    "friendRequestsSent": {
+      "$senderUid": {
+        "$recipientUid": {
+          ".read": "auth != null && (auth.uid === $senderUid || auth.uid === $recipientUid)",
+          ".write": "auth != null && auth.uid === $senderUid"
+        }
+      }
+    },
+
+    "rooms": {
+      "$roomCode": {
+        "meta": {
+          ".read": "auth != null && root.child('rooms').child($roomCode).child('members').child(auth.uid).exists()",
+          ".write": "auth != null && root.child('rooms').child($roomCode).child('meta').child('owner').val() === auth.uid"
+        },
+        "members": {
+          "$uid": {
+            ".read": "auth != null && root.child('rooms').child($roomCode).child('members').child(auth.uid).exists()",
+            ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomCode).child('meta').child('owner').val() === auth.uid)"
+          }
+        },
+        "messages": {
+          "$messageId": {
+            ".read": "auth != null && root.child('rooms').child($roomCode).child('members').child(auth.uid).exists()",
+            ".write": "auth != null && root.child('rooms').child($roomCode).child('members').child(auth.uid).exists() && (newData.child('uid').val() === auth.uid || !newData.exists())"
+          }
+        }
+      }
+    },
+
+    "dms": {
+      "$conversationId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "messages": {
+          "$messageId": {
+            ".read": "auth != null",
+            ".write": "auth != null && (newData.child('uid').val() === auth.uid || !newData.exists())"
+          }
+        }
+      }
+    }
+  }
+}
