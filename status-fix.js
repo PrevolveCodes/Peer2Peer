@@ -6,6 +6,9 @@ const STATUS={online:{label:'Online',icon:'●'},idle:{label:'Idle',icon:'◐'},
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const statusKey=p=>p?.presence||'online';
 const statusHTML=(key,cls='')=>{const s=STATUS[key]||STATUS.online;return `<span class="p2p-status-dot p2p-status-${esc(key)} ${cls}" title="${esc(s.label)}">${s.icon}</span>`};
+let profileUid=null;
+
+document.addEventListener('click',e=>{const avatar=e.target.closest?.('[data-profile-uid]');if(avatar?.dataset.profileUid)profileUid=avatar.dataset.profileUid},{capture:true});
 
 function addStatusToProfileModal(){
  const modal=document.querySelector('#modal-root .modal');
@@ -27,11 +30,10 @@ function addStatusToProfileModal(){
 
 function addStatusToUserProfile(){
  const card=document.querySelector('#modal-root .user-profile-card');
- if(!card||card.dataset.statusReady)return;
+ if(!card||card.dataset.statusReady||!profileUid)return;
  const name=card.querySelector('h2');if(!name)return;
  card.dataset.statusReady='1';
- const uid=card.dataset.uid;
- if(!uid)return;
+ const uid=profileUid;
  get(ref(db,`users/${uid}/profile`)).then(s=>{
   const p=s.val()||{};
   const row=document.createElement('div');row.className='p2p-profile-status';row.innerHTML=`${statusHTML(statusKey(p),'p2p-status-profile')}<span>${esc((STATUS[statusKey(p)]||STATUS.online).label)}</span>`;
