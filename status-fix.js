@@ -21,7 +21,7 @@ function addStatusToProfileModal(){
  const save=modal.querySelector('#save');
  if(save&&!save.dataset.statusWrapped){
   save.dataset.statusWrapped='1';
-  save.addEventListener('click',async()=>{const select=document.getElementById('p2p-presence');if(!select||!auth.currentUser)return;await update(ref(db,`users/${auth.currentUser.uid}/profile`),{presence:select.value});await update(ref(db,`userDirectory/${auth.currentUser.uid}`),{presence:select.value});},true);
+  save.addEventListener('click',async()=>{const select=document.getElementById('p2p-presence');if(!select||!auth.currentUser)return;const key=select.value;await update(ref(db,`users/${auth.currentUser.uid}/profile`),{presence:key});await update(ref(db,`userDirectory/${auth.currentUser.uid}`),{presence:key});},true);
  }
 }
 
@@ -30,7 +30,7 @@ function addStatusToUserProfile(){
  if(!card||card.dataset.statusReady)return;
  const name=card.querySelector('h2');if(!name)return;
  card.dataset.statusReady='1';
- const uid=[...document.querySelectorAll('[data-profile-uid]')].find(x=>x.dataset.profileUid)?.dataset.profileUid;
+ const uid=card.dataset.uid;
  if(!uid)return;
  get(ref(db,`users/${uid}/profile`)).then(s=>{
   const p=s.val()||{};
