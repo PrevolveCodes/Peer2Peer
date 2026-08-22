@@ -5,11 +5,11 @@ const style = document.createElement('style');
 style.textContent = `
 .message.message-grouped .message-avatar { visibility: hidden; }
 .message.message-grouped .message-body > b { display: none; }
-.message.message-grouped { margin-top: 2px; padding-top: 2px !important; padding-bottom: 2px !important; }
-.message.message-group-start { margin-top: 10px; }
-.message-group-timestamp { display: none !important; font-size: 11px; color: var(--muted); margin: 0 0 4px 52px; }
+.message.message-grouped { margin-top: 0 !important; padding-top: 1px !important; padding-bottom: 1px !important; }
+.message.message-group-start { margin-top: 4px !important; }
+.message-group-timestamp { display: none !important; font-size: 11px; color: var(--muted); margin: 2px 0 2px 52px; }
 .message.message-show-timestamp .message-group-timestamp { display: block !important; }
-.message.message-show-timestamp { margin-top: 14px; }
+.message.message-show-timestamp { margin-top: 4px !important; }
 .message .message-body > small { display: none !important; }
 `;
 document.head.appendChild(style);
