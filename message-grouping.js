@@ -48,44 +48,61 @@ function ensureTimestamp(message) {
   timestamp.textContent = message.dataset.groupTimeText || '';
 }
 
+let regrouping = false;
+let scheduled = false;
+
 function regroupMessages() {
   const container = document.getElementById('messages');
-  if (!container) return;
+  if (!container || regrouping) return;
 
-  captureMessageTimes(container);
-  const messages = [...container.querySelectorAll(':scope > .message')];
-  let previousSender = null;
-  let previousTime = null;
+  regrouping = true;
+  try {
+    captureMessageTimes(container);
+    const messages = [...container.querySelectorAll(':scope > .message')];
+    let previousSender = null;
+    let previousTime = null;
 
-  messages.forEach((message, index) => {
-    message.classList.remove('message-grouped', 'message-group-start', 'message-show-timestamp');
+    messages.forEach((message, index) => {
+      message.classList.remove('message-grouped', 'message-group-start', 'message-show-timestamp');
 
-    const oldTimestamp = message.querySelector('.message-group-timestamp');
-    if (oldTimestamp) oldTimestamp.remove();
+      const oldTimestamp = message.querySelector('.message-group-timestamp');
+      if (oldTimestamp) oldTimestamp.remove();
 
-    const sender = senderId(message);
-    const time = messageTime(message);
-    let gap = Infinity;
+      const sender = senderId(message);
+      const time = messageTime(message);
+      let gap = Infinity;
 
-    if (time !== null && previousTime !== null) {
-      gap = time - previousTime;
-      if (gap < 0) gap += 24 * 60 * 60 * 1000;
-    }
-
-    const sameGroup = index > 0 && sender && sender === previousSender && gap < GROUP_GAP_MS;
-
-    if (sameGroup) {
-      message.classList.add('message-grouped');
-    } else {
-      message.classList.add('message-group-start');
-      if (index > 0 && gap >= TIMESTAMP_GAP_MS) {
-        ensureTimestamp(message);
-        message.classList.add('message-show-timestamp');
+      if (time !== null && previousTime !== null) {
+        gap = time - previousTime;
+        if (gap < 0) gap += 24 * 60 * 60 * 1000;
       }
-    }
 
-    previousSender = sender;
-    previousTime = time;
+      const sameGroup = index > 0 && sender && sender === previousSender && gap < GROUP_GAP_MS;
+
+      if (sameGroup) {
+        message.classList.add('message-grouped');
+      } else {
+        message.classList.add('message-group-start');
+        if (index > 0 && gap >= TIMESTAMP_GAP_MS) {
+          ensureTimestamp(message);
+          message.classList.add('message-show-timestamp');
+        }
+      }
+
+      previousSender = sender;
+      previousTime = time;
+    });
+  } finally {
+    regrouping = false;
+  }
+}
+
+function scheduleRegroup() {
+  if (scheduled) return;
+  scheduled = true;
+  requestAnimationFrame(() => {
+    scheduled = false;
+    regroupMessages();
   });
 }
 
@@ -95,10 +112,15 @@ function watchMessages() {
   container.dataset.groupingReady = '1';
   regroupMessages();
 
-  const observer = new MutationObserver(() => requestAnimationFrame(regroupMessages));
+  const observer = new MutationObserver(() => {
+    if (!regrouping) scheduleRegroup();
+  });
   observer.observe(container, {childList: true, subtree: true});
 }
 
-const pageObserver = new MutationObserver(watchMessages);
+const pageObserver = new MutationObserver(() => {
+  if (!document.getElementById('messages')) return;
+  watchMessages();
+});
 pageObserver.observe(document.body, {childList: true, subtree: true});
 watchMessages();
