@@ -1,0 +1,10 @@
+/* Discord-style wider profile panel. Treat the profile area as its own panel. */
+.me{
+  width:100%;
+  align-self:stretch;
+  min-height:58px;
+  padding:10px 12px;
+  border-radius:10px;
+}
+.me img,.me .avatar-fallback{width:40px;height:40px;min-width:40px}
+.me div{min-width:0;flex:1}
