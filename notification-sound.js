@@ -1,6 +1,7 @@
 const P2PNotificationSound=(()=>{
   let audio=null;
   let unlocked=false;
+  let suppressNext=false;
   const seen=new WeakMap();
 
   function unlock(){
@@ -40,30 +41,31 @@ const P2PNotificationSound=(()=>{
     const observer=new MutationObserver(()=>{
       const known=seen.get(container);
       if(!known)return;
-      const current=[...container.querySelectorAll('.message[data-message-id]')];
       const added=[];
-      for(const el of current){
+      for(const el of container.querySelectorAll('.message[data-message-id]')){
         const id=el.dataset.messageId;
         if(!known.has(id)){
           known.add(id);
           added.push(el);
         }
       }
-      // A single newly-added message means an actual incoming message.
-      // Larger replacements are treated as a chat switch/initial render.
       if(added.length===1){
-        const el=added[0];
-        const uid=el.querySelector('[data-profile-uid]')?.dataset.profileUid;
-        const me=window.firebase?.auth?.currentUser?.uid;
-        if(!me||uid!==me)play();
+        if(suppressNext){
+          suppressNext=false;
+          return;
+        }
+        play();
       }
     });
     observer.observe(container,{childList:true,subtree:true});
   }
 
   const watch=()=>{
-    document.addEventListener('click',unlock,{once:false,passive:true});
-    document.addEventListener('touchstart',unlock,{once:false,passive:true});
+    document.addEventListener('click',e=>{
+      unlock();
+      if(e.target.closest('#send'))suppressNext=true;
+    },{passive:true});
+    document.addEventListener('touchstart',unlock,{passive:true});
     const root=document.getElementById('content');
     if(!root)return;
     const rootObserver=new MutationObserver(()=>{
