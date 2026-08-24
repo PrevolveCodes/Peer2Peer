@@ -1,0 +1,17 @@
+/* Always show a visible group icon in the compact group/server sidebar. */
+@media (min-width:701px){
+  #room-list .room-row .room-name:before,
+  #room-list>[data-room]:before{
+    content:'👥' !important;
+    display:block !important;
+    width:60px !important;
+    height:60px !important;
+    line-height:60px !important;
+    font-size:24px !important;
+    text-align:center !important;
+    visibility:visible !important;
+    opacity:1 !important;
+  }
+  #room-list .room-row .room-name img,
+  #room-list>[data-room] img{display:none !important}
+}
