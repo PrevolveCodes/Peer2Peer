@@ -1,8 +1,22 @@
 import {getApp,getApps} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import {getDatabase,ref,get} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
 const app=getApps().length?getApp():null,db=app?getDatabase(app):null;
-const home=document.getElementById('p2p-home'),section=document.getElementById('friends-section'),friends=document.getElementById('friends-list'),dmList=document.getElementById('dm-list');
-async function syncFriends(){if(!friends||!dmList)return;friends.innerHTML='';const items=[...dmList.querySelectorAll('[data-dm]')].filter(dm=>dm.classList.contains('has-unread'));await Promise.all(items.map(async dm=>{const b=dm.cloneNode(true);b.className='list-item friend-nav-item';b.removeAttribute('data-friend-nav');b.querySelectorAll('.remove-friend-button,.unread-count').forEach(x=>x.remove());let avatar=b.querySelector('img');if(!avatar&&db&&dm.dataset.dm){try{const s=await get(ref(db,`users/${dm.dataset.dm}/profile`));const p=s.val()||{};const src=p.avatarData||p.avatar;if(src){avatar=document.createElement('img');avatar.src=src;avatar.alt='';avatar.className='friend-nav-avatar';b.prepend(avatar)}}catch{}}if(avatar){avatar.className='friend-nav-avatar';avatar.removeAttribute('id');avatar.style.cssText='width:60px;height:60px;min-width:60px;border-radius:18px;object-fit:cover;display:block'}friends.appendChild(b);}));friends.querySelectorAll('[data-dm]').forEach(b=>b.onclick=()=>{const original=document.querySelector(`#dm-list [data-dm="${CSS.escape(b.dataset.dm)}"]`);original?.click();});}
-function toggleFriends(){section?.classList.toggle('hidden');home?.classList.toggle('active');if(section&&!section.classList.contains('hidden'))syncFriends();}
-home?.addEventListener('click',toggleFriends);
-if(dmList){new MutationObserver(()=>syncFriends()).observe(dmList,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});syncFriends();}
+const home=document.getElementById('p2p-home'),content=document.getElementById('content'),title=document.getElementById('view-title'),sub=document.getElementById('view-sub');
+function esc(s=''){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function showHome(){
+  home?.classList.add('active');
+  if(title)title.textContent='Friends';
+  if(sub)sub.textContent='Your friends and conversations';
+  if(!content)return;
+  content.innerHTML='<div class="friends-home"><h2>Friends</h2><div class="friends-home-list" id="friends-home-list"><div class="friends-empty">Loading friends...</div></div></div>';
+  const list=document.getElementById('friends-home-list'),dmList=document.getElementById('dm-list');
+  const buttons=[...(dmList?.querySelectorAll('[data-dm]')||[])];
+  if(!buttons.length){list.innerHTML='<div class="friends-empty">No friends yet.</div>';return;}
+  list.innerHTML='';
+  for(const dm of buttons){
+    const uid=dm.dataset.dm;let avatar=dm.querySelector('img')?.src||'';let name=dm.textContent?.trim()||'Friend';
+    if(db&&uid){try{const s=await get(ref(db,`users/${uid}/profile`)),p=s.val()||{};name=p.username||p.displayName||name;avatar=p.avatarData||p.avatar||avatar}catch{}}
+    const row=document.createElement('button');row.type='button';row.className='friend-home-row';row.innerHTML=avatar?`<img src="${esc(avatar)}" alt=""><span>${esc(name)}</span>`:`<span class="friend-home-avatar">👤</span><span>${esc(name)}</span>`;row.onclick=()=>dm.click();list.appendChild(row);
+  }
+}
+home?.addEventListener('click',showHome);
