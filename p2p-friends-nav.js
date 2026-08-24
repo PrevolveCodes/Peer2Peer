@@ -1,0 +1,5 @@
+const home=document.getElementById('p2p-home'),section=document.getElementById('friends-section'),friends=document.getElementById('friends-list'),dmList=document.getElementById('dm-list');
+function syncFriends(){if(!friends||!dmList)return;friends.innerHTML='';dmList.querySelectorAll('[data-dm]').forEach(dm=>{const b=dm.cloneNode(true);b.className='list-item friend-nav-item';b.removeAttribute('data-friend-nav');friends.appendChild(b);});friends.querySelectorAll('[data-dm]').forEach(b=>b.onclick=()=>{const original=document.querySelector(`#dm-list [data-dm="${CSS.escape(b.dataset.dm)}"]`);original?.click();});}
+function toggleFriends(){section?.classList.toggle('hidden');home?.classList.toggle('active');if(section&&!section.classList.contains('hidden'))syncFriends();}
+home?.addEventListener('click',toggleFriends);
+if(dmList){new MutationObserver(syncFriends).observe(dmList,{childList:true,subtree:true});syncFriends();}
