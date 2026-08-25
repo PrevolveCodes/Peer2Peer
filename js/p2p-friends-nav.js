@@ -8,7 +8,9 @@ async function showHome(){
   if(title)title.textContent='Friends';
   if(sub)sub.textContent='Your friends and conversations';
   if(!content)return;
-  content.innerHTML='<div class="friends-home"><h2>Friends</h2><div class="friends-home-list" id="friends-home-list"><div class="friends-empty">Loading friends...</div></div></div>';
+  content.innerHTML='<div class="friends-home"><div class="friends-home-header"><div><h2>Friends</h2><p>Manage your friends and conversations.</p></div><button id="friends-add-button" class="primary" type="button">Add Friend</button></div><div class="friends-home-list" id="friends-home-list"><div class="friends-empty">Loading friends...</div></div></div>';
+  const addButton=document.getElementById('friends-add-button');
+  addButton?.addEventListener('click',()=>document.getElementById('new-dm')?.click());
   const list=document.getElementById('friends-home-list'),dmList=document.getElementById('dm-list');
   const buttons=[...(dmList?.querySelectorAll('[data-dm]')||[])];
   if(!buttons.length){list.innerHTML='<div class="friends-empty">No friends yet.</div>';return;}
