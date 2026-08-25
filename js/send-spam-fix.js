@@ -1,5 +1,5 @@
 // Prevent rapid Enter/click spam from sending duplicate messages while the previous send is still pending.
-// This works with the existing app.js send handler without replacing it.
+// The existing app.js send handler remains responsible for actually sending the message.
 (() => {
   let locked = false;
   let poll = null;
@@ -21,6 +21,7 @@
       if (!msg.value.trim()) {
         locked = false;
         btn.disabled = false;
+        msg.disabled = false;
         clearInterval(poll);
         poll = null;
       }
@@ -42,6 +43,7 @@
 
     locked = true;
     btn.disabled = true;
+    msg.disabled = true;
     unlockWhenCleared();
   }, true);
 
@@ -59,6 +61,6 @@
     if (btn) btn.click();
   }, true);
 
-  // app.js recreates the composer every time a chat is opened, so the delegated
-  // listeners above continue working for every DM and room.
+  // app.js recreates the composer whenever a chat is opened, so these delegated
+  // listeners automatically apply to every DM and room.
 })();
