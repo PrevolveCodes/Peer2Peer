@@ -1,0 +1,8 @@
+import {getDatabase,ref,get,onValue} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+import {getAuth,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+import {initializeApp,getApps} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+const config={apiKey:'AIzaSyAucXMpqBhYbZy1fSbkTKHX23y9bpx1hec',authDomain:'p2pminimalchat.firebaseapp.com',databaseURL:'https://p2pminimalchat-default-rtdb.firebaseio.com',projectId:'p2pminimalchat',storageBucket:'p2pminimalchat.firebasestorage.app',messagingSenderId:'37869407438',appId:'1:37869407438:web:63485dde33bb8710f8d49f'};
+const app=getApps().length?getApps()[0]:initializeApp(config),db=getDatabase(app),auth=getAuth(app);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function apply(){const list=document.getElementById('room-list');if(!list)return;for(const b of list.querySelectorAll('[data-room]')){const code=b.dataset.room;try{const s=await get(ref(db,`rooms/${code}/meta`)),room=s.val()||{},img=room.iconData||room.icon||room.avatarData||room.avatar||null;if(img){b.classList.add('has-group-icon');b.innerHTML=`<img src="${esc(img)}" alt=""><span class="sr-only">${esc(room.name||code)}</span>`;}}catch{}}}
+const start=()=>{apply();const obs=new MutationObserver(()=>apply());const list=document.getElementById('room-list');if(list)obs.observe(list,{childList:true,subtree:true});};onAuthStateChanged(auth,u=>{if(u)start()});
