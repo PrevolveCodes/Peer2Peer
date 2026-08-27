@@ -1,52 +1,11 @@
 import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail,updateProfile,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import {getDatabase,ref,set} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
-
-const auth=getAuth();
-const db=getDatabase();
-const $=id=>document.getElementById(id);
-let mode='signup';
-
-function showError(message){const el=$('auth-error');if(el)el.textContent=message;console.error('[Peer2Peer auth]',message)}
-function friendlyError(e){switch(e?.code){case 'auth/invalid-credential':case 'auth/wrong-password':case 'auth/user-not-found':return 'Incorrect email or password.';case 'auth/invalid-email':return 'Enter a valid email address.';case 'auth/email-already-in-use':return 'That email is already registered. Switch to Log in.';case 'auth/weak-password':return 'Password must be at least 6 characters.';case 'auth/operation-not-allowed':return 'Email/password sign-in is disabled in Firebase Authentication.';case 'auth/network-request-failed':return 'Firebase could not be reached. Check your internet connection or try again.';case 'auth/too-many-requests':return 'Too many attempts. Wait a little while and try again.';case 'auth/missing-email':return 'Enter your email address first.';default:return e?.message||String(e)}}
-
-function setMode(next){
-  mode=next;
-  $('auth-sub').textContent=mode==='signup'?'Create your account':'Welcome back';
-  $('username').classList.toggle('hidden',mode==='login');
-  $('auth-btn').textContent=mode==='signup'?'Create account':'Log in';
-  $('auth-switch').textContent=mode==='signup'?'Already have an account? Log in':'Need an account? Create one';
-  $('forgot-password')?.classList.toggle('hidden',mode!=='login');
-  showError('');
-}
-
+import {getDatabase,ref,set,get,runTransaction,remove} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+const auth=getAuth(),db=getDatabase();const $=id=>document.getElementById(id);let mode='signup';
+function showError(message){const el=$('auth-error');if(el)el.textContent=message;}
+function friendlyError(e){switch(e?.code){case'auth/invalid-credential':case'auth/wrong-password':case'auth/user-not-found':return'Incorrect email or password.';case'auth/invalid-email':return'Enter a valid email address.';case'auth/email-already-in-use':return'That email is already registered. Switch to Log in.';case'auth/weak-password':return'Password must be at least 6 characters.';case'auth/network-request-failed':return'Firebase could not be reached. Check your internet connection.';case'auth/too-many-requests':return'Too many attempts. Wait a little while and try again.';default:return e?.message||String(e)}}
+function norm(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ')}
+function setMode(next){mode=next;$('auth-sub').textContent=mode==='signup'?'Create your account':'Welcome back';$('username').classList.toggle('hidden',mode==='login');$('auth-btn').textContent=mode==='signup'?'Create account':'Log in';$('auth-switch').textContent=mode==='signup'?'Already have an account? Log in':'Need an account? Create one';$('forgot-password')?.classList.toggle('hidden',mode!=='login');showError('')}
 $('auth-switch').onclick=()=>setMode(mode==='signup'?'login':'signup');
-
-$('forgot-password')?.addEventListener('click',async()=>{
-  const email=$('email').value.trim();
-  showError('');
-  if(!email){showError('Enter your email address first.');$('email').focus();return}
-  const button=$('forgot-password');
-  button.disabled=true;
-  button.textContent='Sending…';
-  try{
-    await sendPasswordResetEmail(auth,email);
-    showError('Password reset email sent. Check your inbox.');
-  }catch(e){showError(friendlyError(e))}
-  finally{button.disabled=false;button.textContent='Forgot password?'}
-});
-
-$('auth-btn').onclick=async()=>{
-  const button=$('auth-btn'),email=$('email').value.trim(),password=$('password').value,username=$('username').value.trim();
-  showError('');
-  if(!email||!password||(mode==='signup'&&!username)){showError('Fill in all required fields.');return}
-  button.disabled=true;button.textContent=mode==='signup'?'Creating account…':'Logging in…';
-  try{
-    if(mode==='login'){await signInWithEmailAndPassword(auth,email,password);return}
-    const credential=await createUserWithEmailAndPassword(auth,email,password);
-    await updateProfile(credential.user,{displayName:username});
-    try{const profile={username,status:'Online',pronouns:'',about:'',banner:'#5865f2',accent:'#5865f2'};await set(ref(db,`users/${credential.user.uid}/profile`),profile);await set(ref(db,`userDirectory/${credential.user.uid}`),{uid:credential.user.uid,username,status:'Online'})}catch(dbError){console.error('[Peer2Peer profile setup]',dbError)}
-  }catch(e){showError(friendlyError(e))}
-  finally{if(!$('auth')?.classList.contains('hidden')){button.disabled=false;button.textContent=mode==='signup'?'Create account':'Log in'}}
-};
-
+$('forgot-password')?.addEventListener('click',async()=>{const email=$('email').value.trim();if(!email){showError('Enter your email address first.');return}const b=$('forgot-password');b.disabled=true;b.textContent='Sending…';try{await sendPasswordResetEmail(auth,email);showError('Password reset email sent. Check your inbox.')}catch(e){showError(friendlyError(e))}finally{b.disabled=false;b.textContent='Forgot password?'}});
+$('auth-btn').onclick=async()=>{const b=$('auth-btn'),email=$('email').value.trim(),password=$('password').value,username=$('username').value.trim();showError('');if(!email||!password||(mode==='signup'&&!username)){showError('Fill in all required fields.');return}b.disabled=true;b.textContent=mode==='signup'?'Creating account…':'Logging in…';let claimKey=null;try{if(mode==='login'){await signInWithEmailAndPassword(auth,email,password);return}claimKey=norm(username).replace(/[.#$\[\]/]/g,'_');if(claimKey.length<1)throw Error('Username is required.');const claimRef=ref(db,`usernameClaims/${claimKey}`);const claim=await runTransaction(claimRef,current=>current===null?{username,createdAt:Date.now()}:undefined);if(!claim.committed){showError('That username is already taken.');return}try{const credential=await createUserWithEmailAndPassword(auth,email,password);await updateProfile(credential.user,{displayName:username});const p={username,status:'Online',pronouns:'',about:'',banner:'#5865f2',accent:'#5865f2'};await set(ref(db,`users/${credential.user.uid}/profile`),p);await set(ref(db,`userDirectory/${credential.user.uid}`),{uid:credential.user.uid,username,status:'Online'});await updateProfile(credential.user,{displayName:username});await set(ref(db,`usernameClaims/${claimKey}`),{uid:credential.user.uid,username})}catch(e){await remove(claimRef);throw e}}catch(e){showError(friendlyError(e))}finally{if(!$('auth')?.classList.contains('hidden')){b.disabled=false;b.textContent=mode==='signup'?'Create account':'Log in'}}};
 onAuthStateChanged(auth,user=>{if(user)showError('')});
