@@ -3,22 +3,4 @@ import {getDatabase,ref,get} from 'https://www.gstatic.com/firebasejs/10.8.0/fir
 const app=getApps().length?getApp():null,db=app?getDatabase(app):null;
 const home=document.getElementById('p2p-home'),content=document.getElementById('content'),title=document.getElementById('view-title'),sub=document.getElementById('view-sub');
 function esc(s=''){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-async function showHome(){
-  home?.classList.add('active');
-  if(title)title.textContent='Friends';
-  if(sub)sub.textContent='Your friends and conversations';
-  if(!content)return;
-  content.innerHTML='<div class="friends-home"><div class="friends-home-header"><div><h2>Friends</h2><p>Manage your friends and conversations.</p></div><button id="friends-add-button" class="primary" type="button">Add Friend</button></div><div class="friends-home-list" id="friends-home-list"><div class="friends-empty">Loading friends...</div></div></div>';
-  const addButton=document.getElementById('friends-add-button');
-  addButton?.addEventListener('click',()=>document.getElementById('new-dm')?.click());
-  const list=document.getElementById('friends-home-list'),dmList=document.getElementById('dm-list');
-  const buttons=[...(dmList?.querySelectorAll('[data-dm]')||[])];
-  if(!buttons.length){list.innerHTML='<div class="friends-empty">No friends yet.</div>';return;}
-  list.innerHTML='';
-  for(const dm of buttons){
-    const uid=dm.dataset.dm;let avatar=dm.querySelector('img')?.src||'';let name=dm.textContent?.trim()||'Friend';
-    if(db&&uid){try{const s=await get(ref(db,`users/${uid}/profile`)),p=s.val()||{};name=p.username||p.displayName||name;avatar=p.avatarData||p.avatar||avatar}catch{}}
-    const row=document.createElement('button');row.type='button';row.className='friend-home-row';row.innerHTML=avatar?`<img src="${esc(avatar)}" alt=""><span>${esc(name)}</span>`:`<span class="friend-home-avatar">👤</span><span>${esc(name)}</span>`;row.onclick=()=>dm.click();list.appendChild(row);
-  }
-}
-home?.addEventListener('click',showHome);
+async function showHome(){home?.classList.add('active');if(title)title.textContent='Friends';if(sub)sub.textContent='Your friends and conversations';if(!content)return;content.innerHTML='<div class="friends-home"><div class="friends-home-header"><div><h2>Friends</h2><p>Manage your friends and conversations.</p></div><button id="friends-add-button" class="primary" type="button">Add Friend</button></div><div class="friends-home-list" id="friends-home-list"><div class="friends-empty">Loading friends...</div></div></div>';document.getElementById('friends-add-button')?.addEventListener('click',()=>document.getElementById('new-dm')?.click());const list=document.getElementById('friends-home-list'),dmList=document.getElementById('dm-list');const buttons=[...(dmList?.querySelectorAll('[data-dm]')||[])];if(!buttons.length){list.innerHTML='<div class="friends-empty">No friends yet.</div>';return}list.innerHTML='';for(const dm of buttons){const uid=dm.dataset.dm;let avatar=dm.querySelector('img')?.src||'';let name=dm.textContent?.trim()||'Friend';if(db&&uid){try{const s=await get(ref(db,`users/${uid}/profile`)),p=s.val()||{};name=p.username||p.displayName||name;avatar=p.avatarData||p.avatar||avatar}catch{}}const row=document.createElement('button');row.type='button';row.className='friend-home-row';row.dataset.uid=uid;row.innerHTML=avatar?`<img src="${esc(avatar)}" alt=""><span>${esc(name)}</span>`:`<span class="friend-home-avatar">👤</span><span>${esc(name)}</span>`;row.onclick=()=>dm.click();list.appendChild(row)}}home?.addEventListener('click',showHome);
