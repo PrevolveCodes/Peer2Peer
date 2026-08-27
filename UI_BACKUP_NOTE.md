@@ -1,0 +1,1 @@
+Temporary safety note: UI restart work began on 2026-08-27. Current UI state before restart was backed up in git history at commit 06987db3f3b5fd1daad779ae370564d15711a7d0.
