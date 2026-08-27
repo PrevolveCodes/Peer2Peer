@@ -1,27 +1,39 @@
-/* Use the uploaded room image when one exists; otherwise keep the group icon. */
-@media (min-width:701px){
-  #room-list .room-row .room-name:before,
-  #room-list>[data-room]:before{
-    content:'👥' !important;
-    display:block !important;
-    width:48px !important;
-    height:48px !important;
-    line-height:48px !important;
-    font-size:21px !important;
-    text-align:center !important;
-    visibility:visible !important;
-    opacity:1 !important;
-  }
-  #room-list .room-row .room-name.has-group-icon:before,
-  #room-list>[data-room].has-group-icon:before{display:none !important;}
-  #room-list .room-row .room-name img,
-  #room-list>[data-room] img{
-    display:block !important;
-    width:48px !important;
-    height:48px !important;
-    min-width:48px !important;
-    min-height:48px !important;
-    border-radius:50% !important;
-    object-fit:cover !important;
-  }
+/* Group/room pictures are always circular, including on mobile. */
+#room-list .room-row .room-name img,
+#room-list>[data-room] img,
+#room-list img,
+.room-avatar,
+.room-icon,
+.group-avatar,
+.group-icon,
+.room-picture,
+.group-picture{
+  width:48px !important;
+  height:48px !important;
+  min-width:48px !important;
+  min-height:48px !important;
+  border-radius:50% !important;
+  object-fit:cover !important;
+  overflow:hidden !important;
+  display:block !important;
+}
+
+#room-list .room-row .room-name:before,
+#room-list>[data-room]:before{
+  content:'👥' !important;
+  display:block !important;
+  width:48px !important;
+  height:48px !important;
+  line-height:48px !important;
+  font-size:21px !important;
+  text-align:center !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  border-radius:50% !important;
+  overflow:hidden !important;
+}
+
+#room-list .room-row .room-name.has-group-icon:before,
+#room-list>[data-room].has-group-icon:before{
+  display:none !important;
 }
