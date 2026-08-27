@@ -1,17 +1,6 @@
-import {getAuth} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import {getDatabase,ref,get,push,onValue} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
-
-const auth=getAuth(),db=getDatabase();
-let wired=new WeakSet(),renderToken=0;
-const esc=s=>String(s??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
-const avatarHTML=(v)=>v?.avatar?`<img src="${esc(v.avatar)}" alt="">`:esc((v?.name||'U').charAt(0).toUpperCase());
-
-async function roomForPanel(panel){const title=panel.querySelector('.p2p-group-channel-header')?.childNodes?.[0]?.textContent?.trim();if(!title)return null;const rooms=(await get(ref(db,'rooms'))).val()||{};for(const [code,r] of Object.entries(rooms))if((r.meta?.name||'')===title)return {code,room:r.meta||{}};return null}
-function wireChannel(button){if(wired.has(button))return;wired.add(button);button.onclick=async e=>{e.preventDefault();const panel=button.closest('#p2p-group-channel-panel');if(!panel)return;const info=await roomForPanel(panel);if(!info)return;panel.querySelectorAll('[data-channel]').forEach(x=>x.classList.remove('active'));button.classList.add('active');open(info.code,button.dataset.channel,button.querySelectorAll('span')[1]?.textContent||button.textContent.replace('#','').trim(),info.room)}}
-function open(code,channelId,label,room){const content=document.getElementById('content');if(!content)return;const token=++renderToken;document.getElementById('view-title').textContent=`# ${label}`;document.getElementById('view-sub').textContent=room.name||code;document.getElementById('header-actions').innerHTML=room.owner===auth.currentUser?.uid?'<button class="header-action" id="p2p-channel-settings">⚙</button>':'';content.innerHTML=`<div id="messages" class="messages"></div><div class="composer"><textarea id="msg" placeholder="Message #${esc(label)}..."></textarea><button id="send">Send</button></div>`;const messages=document.getElementById('messages'),path=`rooms/${code}/messages`;
-onValue(ref(db,path),snap=>{if(token!==renderToken)return;const all=snap.val()||{};const entries=Object.entries(all).filter(([,v])=>(v?.channelId||'general')===channelId).sort((a,b)=>(a[1]?.time||0)-(b[1]?.time||0));messages.innerHTML=entries.map(([id,v])=>`<div class="message" data-message-id="${esc(id)}"><div class="message-avatar">${avatarHTML(v)}</div><div class="message-body"><b>${esc(v.name||'User')}</b><small>${new Date(v.time||Date.now()).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</small><p>${esc(v.text||'')}</p></div></div>`).join('');messages.scrollTop=messages.scrollHeight});
-const send=async()=>{const input=document.getElementById('msg'),text=input.value.trim();if(!text)return;const uid=auth.currentUser?.uid;if(!uid)return;const p=(await get(ref(db,`users/${uid}/profile`))).val()||{};try{await push(ref(db,path),{uid,name:p.username||auth.currentUser.displayName||'User',avatar:p.avatarData||p.avatar||null,text,channelId,time:Date.now()});input.value='';input.focus()}catch(err){console.error('Channel send failed',err);alert('Could not send the message. Please try again.')}};
-document.getElementById('send').onclick=send;document.getElementById('msg').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}};
-}
-function scan(){document.querySelectorAll('#p2p-group-channel-panel [data-channel]').forEach(wireChannel)}
-new MutationObserver(scan).observe(document.body,{childList:true,subtree:true});scan();
+// Channel messages are handled by js/big-update.js.
+// This file intentionally does not attach another channel click/send handler.
+// The previous version used rooms/<code>/messages with channelId, which conflicted
+// with the real channel storage at rooms/<code>/channels/<channel>/messages.
+// Keeping a second handler here caused the channel sidebar to open the old
+// group-wide chat and made messages appear to belong to every channel.
