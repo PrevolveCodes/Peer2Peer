@@ -1,0 +1,20 @@
+/* Spam warning */
+.spam-warning-bg{z-index:9999}
+.spam-warning{width:min(430px,92vw);background:var(--panel);border:1px solid #b4232f;border-radius:18px;padding:26px;text-align:center;box-shadow:0 18px 60px #0008;animation:spam-warning-in .22s ease-out}
+.spam-warning-icon{width:52px;height:52px;margin:0 auto 12px;border-radius:50%;display:grid;place-items:center;background:#b4232f;color:#fff;font-weight:900;font-size:28px}
+.spam-warning h2{margin:0 0 10px;color:var(--text)}
+.spam-warning p{margin:8px 0;color:var(--muted);line-height:1.45}
+.spam-warning button{margin-top:14px;min-width:100px}
+@keyframes spam-warning-in{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes p2p-screen-shake{0%,100%{transform:translate3d(0,0,0)}15%{transform:translate3d(-7px,2px,0)}30%{transform:translate3d(7px,-2px,0)}45%{transform:translate3d(-5px,-1px,0)}60%{transform:translate3d(5px,1px,0)}75%{transform:translate3d(-2px,0,0)}}
+.p2p-screen-shake{animation:p2p-screen-shake .5s ease-in-out}
+
+/* Keep group/message controls visible and inside the chat header/message row. */
+.main header{position:relative;z-index:30;overflow:visible!important}
+#header-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;min-width:max-content;position:relative;z-index:31;overflow:visible}
+#header-actions>*{position:relative;z-index:32;visibility:visible!important;opacity:1!important;pointer-events:auto!important;display:inline-flex!important;align-items:center;justify-content:center}
+.header-action{position:relative!important;z-index:32!important}
+.message{overflow:visible!important}
+.message-actions{z-index:20!important}
+.message:hover .message-actions,.message-actions:hover,.message-actions:focus-within{visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+@media(max-width:700px){#header-actions{gap:4px}.main header{padding-right:8px}}
