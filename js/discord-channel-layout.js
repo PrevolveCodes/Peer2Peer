@@ -2,141 +2,20 @@ import {getAuth} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.j
 import {getDatabase,ref,get,update} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
 
 const auth=getAuth(),db=getDatabase();
-let activeRoom=null, observer=null, sorting=false;
+let activeRoom=null, observer=null, sorting=false, roomUnsubscribe=null;
 const esc=s=>String(s??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
 
-function setActiveRoomFromClick(e){
-  const room=e.target.closest('#room-list [data-room]');
-  if(room) activeRoom=room.dataset.room;
-}
+function setActiveRoomFromClick(e){const room=e.target.closest('#room-list [data-room]');if(room)activeRoom=room.dataset.room}
 document.addEventListener('click',setActiveRoomFromClick,true);
 
-async function resolveRoom(){
-  if(activeRoom)return activeRoom;
-  const panel=document.getElementById('p2p-group-channel-panel');
-  if(!panel)return null;
-  const title=panel.querySelector('.p2p-group-channel-header')?.textContent?.trim().replace(/⚙$/,'').trim();
-  if(!title)return null;
-  const rooms=(await get(ref(db,'rooms'))).val()||{};
-  for(const [code,data] of Object.entries(rooms))if((data.meta?.name||'')===title)return activeRoom=code;
-  return null;
-}
-
+async function resolveRoom(){if(activeRoom)return activeRoom;const panel=document.getElementById('p2p-group-channel-panel');if(!panel)return null;const title=panel.querySelector('.p2p-group-channel-header')?.childNodes?.[0]?.textContent?.trim();if(!title)return null;const rooms=(await get(ref(db,'rooms'))).val()||{};for(const [code,data] of Object.entries(rooms))if((data.meta?.name||'')===title)return activeRoom=code;return null}
 function list(){return document.querySelector('#p2p-group-channel-panel .p2p-group-channel-list')}
 function categoryHeaders(){return [...(list()?.querySelectorAll('.p2p-channel-category-row[data-category]')||[])]}
-function childrenOfCategory(header){
-  const out=[];let n=header.nextElementSibling;
-  while(n&&!n.matches('.p2p-channel-category-row')){if(n.matches('[data-channel]'))out.push(n);n=n.nextElementSibling}
-  return out;
-}
-function categoryForChannel(el){
-  let n=el.previousElementSibling;
-  while(n){if(n.matches('.p2p-channel-category-row[data-category]'))return n.dataset.category;n=n.previousElementSibling}
-  return null;
-}
-function decorate(){
-  const panel=document.getElementById('p2p-group-channel-panel');
-  const l=list(); if(!panel||!l)return;
-  panel.classList.add('p2p-discord-channel-panel');
-  categoryHeaders().forEach(h=>{
-    h.draggable=true;
-    h.classList.add('p2p-draggable-category');
-    const name=h.querySelector('span');
-    if(name&&!name.querySelector('.p2p-collapse-chevron'))name.insertAdjacentHTML('afterbegin','<span class="p2p-collapse-chevron">▾</span> ');
-    const id=h.dataset.category;
-    const collapsed=localStorage.getItem('p2p-category-collapsed-'+id)==='1';
-    h.classList.toggle('collapsed',collapsed);
-    childrenOfCategory(h).forEach(ch=>ch.classList.toggle('p2p-channel-hidden',collapsed));
-    h.onclick=ev=>{
-      if(ev.target.closest('[data-channel]'))return;
-      const next=!h.classList.contains('collapsed');
-      h.classList.toggle('collapsed',next);
-      childrenOfCategory(h).forEach(ch=>ch.classList.toggle('p2p-channel-hidden',next));
-      localStorage.setItem('p2p-category-collapsed-'+id,next?'1':'0');
-    };
-    h.ondragstart=e=>{e.stopPropagation();e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',JSON.stringify({type:'category',id}))};
-    h.ondragover=e=>{e.preventDefault();e.stopPropagation();h.classList.add('drag-over')};
-    h.ondragleave=()=>h.classList.remove('drag-over');
-    h.ondrop=async e=>{e.preventDefault();e.stopPropagation();h.classList.remove('drag-over');await handleDrop(h,e)};
-  });
-  l.querySelectorAll('[data-channel]').forEach(ch=>{
-    ch.draggable=true;
-    ch.classList.add('p2p-draggable-channel');
-    ch.ondragstart=e=>{e.stopPropagation();e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',JSON.stringify({type:'channel',id:ch.dataset.channel,category:categoryForChannel(ch)}));ch.classList.add('dragging')};
-    ch.ondragend=()=>ch.classList.remove('dragging');
-    ch.ondragover=e=>{e.preventDefault();e.stopPropagation();ch.classList.add('drag-over')};
-    ch.ondragleave=()=>ch.classList.remove('drag-over');
-    ch.ondrop=async e=>{e.preventDefault();e.stopPropagation();ch.classList.remove('drag-over');await handleDrop(ch,e)};
-  });
-}
-
-async function handleDrop(target,e){
-  const code=await resolveRoom();if(!code)return;
-  let payload;try{payload=JSON.parse(e.dataTransfer.getData('text/plain'))}catch{return}
-  if(payload.type==='category'){
-    if(!target.matches('.p2p-channel-category-row[data-category]'))return;
-    const headers=categoryHeaders(),from=headers.findIndex(x=>x.dataset.category===payload.id),to=headers.indexOf(target);
-    if(from<0||to<0||from===to)return;
-    const ordered=headers.filter(x=>x.dataset.category!==payload.id);ordered.splice(to,0,headers[from]);
-    const changes={};ordered.forEach((h,i)=>changes[`rooms/${code}/categories/${h.dataset.category}/order`]=i);
-    await update(ref(db),changes);return;
-  }
-  if(payload.type==='channel'){
-    const channels=[...list().querySelectorAll('[data-channel]')];
-    const dragged=channels.find(x=>x.dataset.channel===payload.id);if(!dragged)return;
-    let newCategory=null;
-    if(target.matches('.p2p-channel-category-row[data-category]'))newCategory=target.dataset.category;
-    else newCategory=categoryForChannel(target);
-    if(target===dragged)return;
-    if(target.matches('.p2p-channel-category-row[data-category]')){
-      target.after(dragged);
-    }else if(target.dataset.channel){
-      target.before(dragged);
-    }
-    const code2=await resolveRoom();if(!code2)return;
-    const all=[...list().querySelectorAll('[data-channel]')],changes={};
-    for(let i=0;i<all.length;i++){
-      const ch=all[i],cat=categoryForChannel(ch);
-      changes[`rooms/${code2}/channels/${ch.dataset.channel}/order`]=i;
-      if(ch.dataset.channel===payload.id)changes[`rooms/${code2}/channels/${ch.dataset.channel}/category`]=newCategory;
-    }
-    await update(ref(db),changes);
-  }
-}
-
-function sortFromFirebase(data){
-  const l=list();if(!l||sorting)return;
-  const channels=data.channels||{},categories=data.categories||{};
-  const headers=categoryHeaders().sort((a,b)=>(categories[a.dataset.category]?.order??999999)-(categories[b.dataset.category]?.order??999999));
-  const channelMap=new Map(Object.entries(channels));
-  const unc=[];
-  for(const [id,ch] of Object.entries(channels))if(!ch.category||!categories[ch.category])unc.push([id,ch]);
-  sorting=true;
-  try{
-    headers.forEach(h=>{
-      l.appendChild(h);
-      const ids=Object.entries(channels).filter(([id,ch])=>ch.category===h.dataset.category).sort((a,b)=>(a[1]?.order??999999)-(b[1]?.order??999999)).map(x=>x[0]);
-      for(const id of ids){const el=l.querySelector(`[data-channel="${CSS.escape(id)}"]`);if(el)l.appendChild(el)}
-    });
-    unc.sort((a,b)=>(a[1]?.order??999999)-(b[1]?.order??999999));
-    const uncHeader=[...l.children].find(x=>x.classList.contains('p2p-group-channel-category')&&!x.dataset.category);
-    if(uncHeader){l.appendChild(uncHeader);for(const [id] of unc){const el=l.querySelector(`[data-channel="${CSS.escape(id)}"]`);if(el)l.appendChild(el)}}
-  }finally{sorting=false}
-  decorate();
-}
-
-async function watchRoom(){
-  const code=await resolveRoom();if(!code)return;
-  const snap=await get(ref(db,`rooms/${code}`));const data=snap.val()||{};
-  sortFromFirebase({channels:data.channels||{},categories:data.categories||{}});
-}
-
-function boot(){
-  const panel=document.getElementById('p2p-group-channel-panel');if(!panel)return;
-  if(observer)observer.disconnect();
-  observer=new MutationObserver(()=>{if(!sorting){decorate();watchRoom()}});
-  observer.observe(panel,{childList:true,subtree:true});
-  decorate();watchRoom();
-}
-const appObserver=new MutationObserver(boot);appObserver.observe(document.body,{childList:true,subtree:true});
-boot();
+function childrenOfCategory(header){const out=[];let n=header.nextElementSibling;while(n&&!n.matches('.p2p-channel-category-row')){if(n.matches('[data-channel]'))out.push(n);n=n.nextElementSibling}return out}
+function categoryForChannel(el){let n=el.previousElementSibling;while(n){if(n.matches('.p2p-channel-category-row[data-category]'))return n.dataset.category;n=n.previousElementSibling}return null}
+function decorate(){const panel=document.getElementById('p2p-group-channel-panel'),l=list();if(!panel||!l)return;panel.classList.add('p2p-discord-channel-panel');categoryHeaders().forEach(h=>{h.draggable=true;h.classList.add('p2p-draggable-category');const name=h.querySelector('span');if(name&&!name.querySelector('.p2p-collapse-chevron'))name.insertAdjacentHTML('afterbegin','<span class="p2p-collapse-chevron">▾</span> ');const id=h.dataset.category,collapsed=localStorage.getItem('p2p-category-collapsed-'+id)==='1';h.classList.toggle('collapsed',collapsed);childrenOfCategory(h).forEach(ch=>ch.classList.toggle('p2p-channel-hidden',collapsed));h.onclick=ev=>{if(ev.target.closest('[data-channel]'))return;const next=!h.classList.contains('collapsed');h.classList.toggle('collapsed',next);childrenOfCategory(h).forEach(ch=>ch.classList.toggle('p2p-channel-hidden',next));localStorage.setItem('p2p-category-collapsed-'+id,next?'1':'0')};h.ondragstart=e=>{e.stopPropagation();e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',JSON.stringify({type:'category',id}))};h.ondragover=e=>{e.preventDefault();e.stopPropagation();h.classList.add('drag-over')};h.ondragleave=()=>h.classList.remove('drag-over');h.ondrop=async e=>{e.preventDefault();e.stopPropagation();h.classList.remove('drag-over');await handleDrop(h,e)}});l.querySelectorAll('[data-channel]').forEach(ch=>{ch.draggable=true;ch.classList.add('p2p-draggable-channel');ch.ondragstart=e=>{e.stopPropagation();e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',JSON.stringify({type:'channel',id:ch.dataset.channel,category:categoryForChannel(ch)}));ch.classList.add('dragging')};ch.ondragend=()=>ch.classList.remove('dragging');ch.ondragover=e=>{e.preventDefault();e.stopPropagation();ch.classList.add('drag-over')};ch.ondragleave=()=>ch.classList.remove('drag-over');ch.ondrop=async e=>{e.preventDefault();e.stopPropagation();ch.classList.remove('drag-over');await handleDrop(ch,e)}})}
+async function handleDrop(target,e){const code=await resolveRoom();if(!code)return;let payload;try{payload=JSON.parse(e.dataTransfer.getData('text/plain'))}catch{return}if(payload.type==='category'){if(!target.matches('.p2p-channel-category-row[data-category]'))return;const headers=categoryHeaders(),from=headers.findIndex(x=>x.dataset.category===payload.id),to=headers.indexOf(target);if(from<0||to<0||from===to)return;const ordered=headers.filter(x=>x.dataset.category!==payload.id);ordered.splice(to,0,headers[from]);const changes={};ordered.forEach((h,i)=>changes[`rooms/${code}/categories/${h.dataset.category}/order`]=i);await update(ref(db),changes);return}if(payload.type==='channel'){const channels=[...list().querySelectorAll('[data-channel]')],dragged=channels.find(x=>x.dataset.channel===payload.id);if(!dragged||target===dragged)return;let newCategory=target.matches('.p2p-channel-category-row[data-category]')?target.dataset.category:categoryForChannel(target);if(target.matches('.p2p-channel-category-row[data-category]')){target.after(dragged)}else if(target.dataset.channel){target.before(dragged)}const all=[...list().querySelectorAll('[data-channel]')],changes={};const perCat={};for(const ch of all){const cat=categoryForChannel(ch)||'__uncategorized';(perCat[cat]??=[]).push(ch)}for(const arr of Object.values(perCat))arr.forEach((ch,i)=>{changes[`rooms/${code}/channels/${ch.dataset.channel}/order`]=i});changes[`rooms/${code}/channels/${payload.id}/category`]=newCategory||null;await update(ref(db),changes)}}
+function sortFromFirebase(data){const l=list();if(!l||sorting)return;const channels=data.channels||{},categories=data.categories||{};const headers=categoryHeaders().sort((a,b)=>(categories[a.dataset.category]?.order??999999)-(categories[b.dataset.category]?.order??999999));sorting=true;try{headers.forEach(h=>{l.appendChild(h);const ids=Object.entries(channels).filter(([,ch])=>ch.category===h.dataset.category).sort((a,b)=>(a[1]?.order??999999)-(b[1]?.order??999999)).map(x=>x[0]);for(const id of ids){const el=l.querySelector(`[data-channel="${CSS.escape(id)}"]`);if(el)l.appendChild(el)}});const unc=Object.entries(channels).filter(([,ch])=>!ch.category||!categories[ch.category]).sort((a,b)=>(a[1]?.order??999999)-(b[1]?.order??999999));for(const [id] of unc){const el=l.querySelector(`[data-channel="${CSS.escape(id)}"]`);if(el)l.appendChild(el)}}finally{sorting=false}decorate()}
+async function watchRoom(){const code=await resolveRoom();if(!code)return;if(roomUnsubscribe){roomUnsubscribe();roomUnsubscribe=null}const {onValue}=await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js');roomUnsubscribe=onValue(ref(db,`rooms/${code}`),s=>{const data=s.val()||{};sortFromFirebase({channels:data.channels||{},categories:data.categories||{}})})}
+function boot(){const panel=document.getElementById('p2p-group-channel-panel');if(!panel)return;if(observer)observer.disconnect();observer=new MutationObserver(()=>{if(!sorting){decorate();watchRoom()}});observer.observe(panel,{childList:true,subtree:true});decorate();watchRoom()}
+const appObserver=new MutationObserver(boot);appObserver.observe(document.body,{childList:true,subtree:true});boot();
