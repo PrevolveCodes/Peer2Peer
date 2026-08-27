@@ -1,7 +1,11 @@
 import {getDatabase,ref,get,update} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
 
-/* Client-side spam protection for the Peer2Peer composer.
-   First burst: 1 minute timeout. Second burst: 1 hour timeout.
+/* Progressive spam protection.
+   1st offense: 1 minute
+   2nd: 5 minutes
+   3rd: 15 minutes
+   4th: 30 minutes
+   5th+: 1 hour
    The timeout is persisted in Firebase so it survives refreshes. */
 const db=getDatabase();
 let currentUid=null;
@@ -11,7 +15,6 @@ let popupOpen=false;
 let lastComposer=null;
 
 const root=()=>document.getElementById('modal-root');
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function findUid(){
   if(currentUid)return currentUid;
@@ -19,18 +22,31 @@ function findUid(){
   return avatar?.dataset?.uid||null;
 }
 
-function showSpamPopup(minutes,secondOffense){
+function durationForStrike(strike){
+  return [0,60*1000,5*60*1000,15*60*1000,30*60*1000,60*60*1000][Math.min(strike,5)];
+}
+
+function labelForDuration(ms){
+  const minutes=Math.round(ms/60000);
+  if(minutes<60)return `${minutes} minute${minutes===1?'':'s'}`;
+  return '1 hour';
+}
+
+function showSpamPopup(durationMs,strike){
   if(popupOpen)return;
   popupOpen=true;
   const r=root();
-  if(!r)return;
-  r.innerHTML=`<div class="modal-bg spam-warning-bg"><div class="spam-warning" role="alert" aria-live="assertive"><div class="spam-warning-icon">!</div><h2>Slow down</h2><p>You have been timed out for <b>${minutes} minute${minutes===1?'':'s'}</b> for spamming.</p><p>${secondOffense?'One more spam offense will result in a 1 hour timeout on your account.':'One more spam offense will result in a 1 hour timeout on your account.'}</p><button id="spam-warning-ok" class="primary">OK</button></div></div>`;
+  if(!r){popupOpen=false;return;}
+  const duration=labelForDuration(durationMs);
+  const nextDuration=labelForDuration(durationForStrike(strike+1));
+  const nextText=strike>=5?'Further spam offenses will continue to result in a 1 hour timeout.':`The next spam offense will result in a ${nextDuration} timeout.`;
+  r.innerHTML=`<div class="modal-bg spam-warning-bg"><div class="spam-warning" role="alert" aria-live="assertive"><div class="spam-warning-icon">!</div><h2>Slow down</h2><p>You have been timed out for <b>${duration}</b> for spamming.</p><p>${nextText}</p><button id="spam-warning-ok" class="primary">OK</button></div></div>`;
   const bg=r.firstElementChild;
-  const card=r.querySelector('.spam-warning');
   document.body.classList.add('p2p-screen-shake');
   setTimeout(()=>document.body.classList.remove('p2p-screen-shake'),550);
-  r.querySelector('#spam-warning-ok')?.addEventListener('click',()=>{bg?.remove();popupOpen=false});
-  bg?.addEventListener('click',e=>{if(e.target===bg){bg.remove();popupOpen=false}});
+  const close=()=>{bg?.remove();popupOpen=false};
+  r.querySelector('#spam-warning-ok')?.addEventListener('click',close);
+  bg?.addEventListener('click',e=>{if(e.target===bg)close()});
 }
 
 function timeoutActive(data){return Number(data?.spamTimeoutUntil||0)>Date.now();}
@@ -47,10 +63,10 @@ async function applyTimeout(uid){
     const moderation=await loadModeration(uid)||{};
     const previousStrikes=Number(moderation.spamStrikes||0);
     const nextStrike=previousStrikes+1;
-    const duration=nextStrike>=2?60*60*1000:60*1000;
+    const duration=durationForStrike(nextStrike);
     const until=Date.now()+duration;
     await update(ref(db,`users/${uid}/moderation`),{spamStrikes:nextStrike,spamTimeoutUntil:until,lastSpamAt:Date.now()});
-    showSpamPopup(nextStrike>=2?60:1,nextStrike>=2);
+    showSpamPopup(duration,nextStrike);
     lockComposer(until);
   }catch(e){console.warn('Spam protection could not save timeout',e)}
   finally{offenseHandling=false}
@@ -126,7 +142,6 @@ const composerObserver=new MutationObserver(()=>{
 });
 composerObserver.observe(document.body,{childList:true,subtree:true});
 
-/* Pick up the authenticated user from Firebase Auth without touching the app's auth flow. */
 import('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js').then(({getAuth,onAuthStateChanged})=>{
   const auth=getAuth();
   onAuthStateChanged(auth,user=>{currentUid=user?.uid||null;if(currentUid)checkTimeout()});
