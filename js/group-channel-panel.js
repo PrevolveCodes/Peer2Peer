@@ -1,0 +1,11 @@
+import {getAuth} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+import {getDatabase,ref,get,onValue} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+const auth=getAuth(),db=getDatabase();
+const esc=s=>String(s??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
+let currentCode=null,unsubscribe=null;
+function panel(){let p=document.getElementById('p2p-group-channel-panel');if(!p){p=document.createElement('aside');p.id='p2p-group-channel-panel';document.querySelector('.main')?.before(p)}return p}
+function hide(){const p=document.getElementById('p2p-group-channel-panel');if(p)p.classList.remove('visible');if(unsubscribe){unsubscribe();unsubscribe=null}currentCode=null}
+function show(code,room){currentCode=code;const p=panel();p.classList.add('visible');p.innerHTML=`<div class="p2p-group-panel-header"><div><b>${esc(room.name||code)}</b><small>GROUP</small></div></div><div class="p2p-group-category"><span>TEXT CHANNELS</span></div><div id="p2p-group-channel-list" class="p2p-group-channel-list"></div>`;if(unsubscribe)unsubscribe();unsubscribe=onValue(ref(db,`rooms/${code}/channels`),s=>{const channels=s.val()||{};const list=document.getElementById('p2p-group-channel-list');if(!list)return;list.innerHTML=Object.entries(channels).map(([id,c])=>`<button class="p2p-group-channel" data-channel-id="${esc(id)}"><span>#</span><b>${esc(c.name||id)}</b></button>`).join('')||'<div class="p2p-group-empty">No channels</div>';list.querySelectorAll('[data-channel-id]').forEach(b=>b.onclick=()=>{const id=b.dataset.channelId;const c=channels[id]||{};document.getElementById('view-title').textContent=`# ${c.name||id}`;document.getElementById('view-sub').textContent=room.name||code})})}
+document.addEventListener('click',async e=>{const b=e.target.closest('#room-list [data-room]');if(!b||e.target.closest('[data-room-settings]'))return;const code=b.dataset.room;const s=await get(ref(db,`rooms/${code}/meta`));show(code,s.val()||{})},true);
+document.addEventListener('click',e=>{if(e.target.closest('#p2p-home,.list-item:not([data-room]),#new-dm'))hide()});
+const obs=new MutationObserver(()=>{if(document.getElementById('app')?.classList.contains('hidden'))hide()});obs.observe(document.body,{attributes:true,subtree:true,attributeFilter:['class']});
