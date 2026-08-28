@@ -17,10 +17,11 @@ async function openRoomSettings(code){
   const close=()=>{root().innerHTML='';window.__p2pRoomSettingsCode=null};
   document.getElementById('p2p-rs-x').onclick=close;document.getElementById('p2p-rs-close').onclick=close;
   document.getElementById('p2p-rs-pic').onchange=e=>{const f=e.target.files[0];if(!f)return;if(f.size>2e6){alert('Use an image under 2 MB.');e.target.value='';return}const r=new FileReader();r.onload=()=>document.getElementById('p2p-rs-preview').innerHTML=avatarHTML({avatarData:r.result},document.getElementById('p2p-rs-name').value);r.readAsDataURL(f)};
-  document.getElementById('p2p-rs-save').onclick=async()=>{const btn=document.getElementById('p2p-rs-save');btn.disabled=true;try{let pic=room.avatarData||null;const f=document.getElementById('p2p-rs-pic').files[0];if(f)pic=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f)});const name=document.getElementById('p2p-rs-name').value.trim()||code;const permissions={};document.querySelectorAll('#modal-root [data-p2p-perm]').forEach(i=>{const u=i.dataset.uid,p=i.dataset.p2pPerm;permissions[u]??={};permissions[u][p]=!!i.checked});await update(ref(db,`rooms/${code}/meta`),{name,avatarData:pic});await set(ref(db,`rooms/${code}/meta/permissions`),permissions);close();const row=document.querySelector(`[data-room="${CSS.escape(code)}"]`);row?.querySelector('span')?.replaceChildren(document.createTextNode(name));}catch(e){console.error(e);alert(`Could not save room settings: ${e?.message||e}`)}finally{if(document.getElementById('p2p-rs-save'))document.getElementById('p2p-rs-save').disabled=false}};
+  document.getElementById('p2p-rs-save').onclick=async()=>{const btn=document.getElementById('p2p-rs-save');btn.disabled=true;try{let pic=room.avatarData||null;const f=document.getElementById('p2p-rs-pic').files[0];if(f)pic=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f)});const name=document.getElementById('p2p-rs-name').value.trim()||code;const permissions={};document.querySelectorAll('#modal-root [data-p2p-perm]').forEach(i=>{const u=i.dataset.uid,p=i.dataset.p2pPerm;permissions[u]??={};permissions[u][p]=!!i.checked});await update(ref(db,`rooms/${code}/meta`),{name,avatarData:pic,permissions});close();const row=document.querySelector(`[data-room="${CSS.escape(code)}"]`);row?.querySelector('span')?.replaceChildren(document.createTextNode(name));}catch(e){console.error(e);alert(`Could not save room settings: ${e?.message||e}`)}finally{if(document.getElementById('p2p-rs-save'))document.getElementById('p2p-rs-save').disabled=false}};
   document.getElementById('p2p-rs-delete').onclick=async()=>{if(!confirm(`Delete ${room.name||code}? This removes the room and all its messages. This cannot be undone.`))return;try{await remove(ref(db,`rooms/${code}`));for(const u of Object.values(members))if(u?.uid)await remove(ref(db,`users/${u.uid}/joinedRooms/${code}`));close();document.querySelector(`[data-room="${CSS.escape(code)}"]`)?.closest('.room-row')?.remove();document.getElementById('content').innerHTML='<div class="welcome"><div class="big-logo">P2P</div><h2>Room deleted</h2><p>The room and its messages are gone.</p></div>';document.getElementById('view-title').textContent='Welcome';document.getElementById('view-sub').textContent='Private conversations and rooms';}catch(e){console.error(e);alert(`Could not delete room: ${e?.message||e}`)}};
  }catch(e){console.error(e);alert(`Could not open room settings: ${e?.message||e}`)}
 }
+window.__p2pOpenRoomSettings=openRoomSettings;
 document.addEventListener('click',e=>{const b=e.target.closest('#room-list [data-room-settings]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();openRoomSettings(b.dataset.roomSettings)},true);
 
 // Navigation fallback: only takes over when the normal app click did not open a chat.
@@ -42,4 +43,16 @@ async function fallbackOpenChat(kind,id,label){
 document.addEventListener('click',e=>{
  const dm=e.target.closest('#dm-list [data-dm]');const room=e.target.closest('#room-list [data-room]');if(!dm&&!room||e.target.closest('[data-room-settings]'))return;
  const before=document.getElementById('messages');setTimeout(async()=>{if(document.getElementById('messages')!==before)return;if(dm)await fallbackOpenChat('dm',dm.dataset.dm,dm.textContent.trim());else if(room)await fallbackOpenChat('room',room.dataset.room,room.textContent.trim())},100);
+},true);
+
+// The channel sidebar's group settings button must use the full room-settings panel,
+// not the legacy name-only group settings modal.
+document.addEventListener('click',e=>{
+ const b=e.target.closest('#p2p-group-settings-inline');
+ if(!b)return;
+ const panel=b.closest('#p2p-group-channel-panel');
+ const roomButton=document.querySelector('#room-list [data-room]');
+ const code=window.__p2pActiveRoomCode||panel?.dataset?.roomCode||roomButton?.dataset?.room;
+ if(!code)return;
+ e.preventDefault();e.stopImmediatePropagation();openRoomSettings(code);
 },true);
