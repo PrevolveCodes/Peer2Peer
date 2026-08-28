@@ -1,85 +1,13 @@
 import {getAuth} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import {getDatabase,ref,get,set,update,remove,push} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
-
 const roleAuth=getAuth(),roleDb=getDatabase();
 const roleEsc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const roleModalRoot=()=>document.getElementById('modal-root');
 const roleModal=html=>{roleModalRoot().innerHTML=`<div class="modal-bg"><div class="modal p2p-role-modal">${html}</div></div>`;return roleModalRoot().firstElementChild};
 const DEFAULT_PERMS={manageSettings:false,manageMembers:false,invite:true,deleteMessages:false,pinMessages:false,sendMessages:true};
-
-async function ensureRoles(code,room,members){
-  const snap=await get(ref(roleDb,`rooms/${code}/roles`));
-  const existing=snap.val()||{};
-  if(Object.keys(existing).length)return existing;
-  const roles={
-    owner:{name:'Owner',color:'#f0b232',position:100,permissions:{manageSettings:true,manageMembers:true,invite:true,deleteMessages:true,pinMessages:true,sendMessages:true},managed:false},
-    admin:{name:'Admin',color:'#5865f2',position:50,permissions:{manageSettings:true,manageMembers:true,invite:true,deleteMessages:true,pinMessages:true,sendMessages:true},managed:false},
-    member:{name:'Member',color:'#99aab5',position:0,permissions:{...DEFAULT_PERMS},managed:false}
-  };
-  const changes={};
-  for(const [id,r] of Object.entries(roles))changes[`rooms/${code}/roles/${id}`]=r;
-  for(const [uid,u] of Object.entries(members||{})){
-    const role=uid===room.owner?'owner':'member';
-    changes[`rooms/${code}/members/${uid}/role`]=role;
-  }
-  await update(ref(roleDb),changes);
-  return roles;
-}
-
-function permissionRows(perms){
-  const names=[['manageSettings','Manage group settings'],['manageMembers','Manage members'],['invite','Invite members'],['deleteMessages','Delete messages'],['pinMessages','Pin messages'],['sendMessages','Send messages']];
-  return names.map(([key,label])=>`<label class="p2p-role-permission"><input type="checkbox" data-role-perm="${key}" ${perms?.[key]?'checked':''}> ${label}</label>`).join('');
-}
-
-async function openRolePopup(code){
-  const user=roleAuth.currentUser;if(!user)return;
-  const meta=(await get(ref(roleDb,`rooms/${code}/meta`))).val()||{};
-  if(meta.owner!==user.uid){alert('Only the group owner can manage roles.');return;}
-  const members=(await get(ref(roleDb,`rooms/${code}/members`))).val()||{};
-  const roles=await ensureRoles(code,meta,members);
-  const m=roleModal(`<button class="x" id="p2p-role-x">×</button>
-    <h2>Roles</h2><p class="muted">Create roles with permissions, then assign a role to each member.</p>
-    <div class="p2p-role-layout">
-      <div class="p2p-role-list" id="p2p-role-list"></div>
-      <div class="p2p-role-editor" id="p2p-role-editor"><p class="muted">Select a role.</p></div>
-    </div>
-    <div class="p2p-role-members"><h3>Members</h3><div id="p2p-role-members-list"></div></div>
-    <div class="modal-actions"><button id="p2p-role-close">Close</button><button class="primary" id="p2p-role-new">New role</button></div>`);
-  const close=()=>m.remove();document.getElementById('p2p-role-x').onclick=document.getElementById('p2p-role-close').onclick=close;
-  const list=document.getElementById('p2p-role-list'),editor=document.getElementById('p2p-role-editor'),memberList=document.getElementById('p2p-role-members-list');
-  let selected=Object.keys(roles).sort((a,b)=>(roles[b].position||0)-(roles[a].position||0))[0]||null;
-  const roleEntries=()=>Object.entries(roles).sort((a,b)=>(b[1].position||0)-(a[1].position||0));
-  const renderRoles=()=>{list.innerHTML=roleEntries().map(([id,r])=>`<button class="p2p-role-item ${id===selected?'active':''}" data-role-id="${roleEsc(id)}"><span style="color:${roleEsc(r.color||'inherit')}">●</span>${roleEsc(r.name||id)}</button>`).join('');list.querySelectorAll('[data-role-id]').forEach(b=>b.onclick=()=>{selected=b.dataset.roleId;renderRoles();renderEditor()})};
-  const renderEditor=()=>{const r=roles[selected];if(!r){editor.innerHTML='<p class="muted">Select a role.</p>';return}const locked=selected==='owner';editor.innerHTML=`<label>Role name<input id="p2p-role-name" maxlength="40" value="${roleEsc(r.name||'')}" ${locked?'disabled':''}></label><label>Role color<input id="p2p-role-color" type="color" value="${roleEsc(r.color||'#5865f2')}" ${locked?'disabled':''}></label><h3>Permissions</h3>${permissionRows(r.permissions)}<div class="modal-actions"><button class="primary" id="p2p-role-save">Save role</button>${!locked?'<button class="danger" id="p2p-role-delete">Delete role</button>':''}</div>`;
-    document.getElementById('p2p-role-save').onclick=async()=>{const name=document.getElementById('p2p-role-name').value.trim();if(!name)return alert('Role name is required.');const perms={};editor.querySelectorAll('[data-role-perm]').forEach(i=>perms[i.dataset.rolePerm]=i.checked);roles[selected]={...r,name,color:document.getElementById('p2p-role-color').value,permissions:perms};await set(ref(roleDb,`rooms/${code}/roles/${selected}`),roles[selected]);renderRoles();renderMembers()};
-    document.getElementById('p2p-role-delete')?.addEventListener('click',async()=>{if(!confirm(`Delete the ${r.name||'role'} role? Members using it will become Members.`))return;for(const [uid,u] of Object.entries(members))if((u.role||'member')===selected)await update(ref(roleDb,`rooms/${code}/members/${uid}`),{role:'member'});await remove(ref(roleDb,`rooms/${code}/roles/${selected}`));delete roles[selected];selected='member';renderRoles();renderEditor();renderMembers()});
-  };
-  const renderMembers=()=>{memberList.innerHTML=Object.entries(members).map(([uid,u])=>{const current=u.role|| (uid===meta.owner?'owner':'member');return `<div class="p2p-role-member"><div><b>${roleEsc(u.username||uid)}</b><small>${uid===meta.owner?'Owner':''}</small></div><select data-member-role="${roleEsc(uid)}" ${uid===meta.owner?'disabled':''}>${roleEntries().map(([rid,r])=>`<option value="${roleEsc(rid)}" ${rid===current?'selected':''}>${roleEsc(r.name||rid)}</option>`).join('')}</select></div>`}).join('');memberList.querySelectorAll('[data-member-role]').forEach(s=>s.onchange=async()=>{await update(ref(roleDb,`rooms/${code}/members/${s.dataset.memberRole}`),{role:s.value})})};
-  document.getElementById('p2p-role-new').onclick=async()=>{const id=push(ref(roleDb,`rooms/${code}/roles`)).key;roles[id]={name:'New Role',color:'#5865f2',position:10,permissions:{...DEFAULT_PERMS},managed:false};await set(ref(roleDb,`rooms/${code}/roles/${id}`),roles[id]);selected=id;renderRoles();renderEditor();renderMembers()};
-  renderRoles();renderEditor();renderMembers();
-}
-
-// Capture the existing room-settings buttons before app.js opens its old per-member permission panel.
-document.addEventListener('click',e=>{
-  const button=e.target.closest('[data-room-settings], #p2p-group-settings-inline');
-  if(!button)return;
-  const code=button.dataset.roomSettings||window.P2P_ACTIVE_ROOM;
-  if(!code)return;
-  e.preventDefault();e.stopImmediatePropagation();
-  openRolePopup(code);
-},true);
-
-// Channel sidebar exposes the current room code here so the same role popup can be opened there.
-const roomObserver=new MutationObserver(()=>{
-  const panel=document.getElementById('p2p-group-channel-panel');
-  if(!panel)return;
-  const button=panel.querySelector('#p2p-group-settings-inline');
-  if(button&&!button.dataset.roleHooked){
-    button.dataset.roleHooked='1';
-    const original=button.onclick;
-    button.onclick=e=>{e?.preventDefault();const code=window.P2P_ACTIVE_ROOM;if(code)openRolePopup(code);else if(original)original.call(button,e)};
-  }
-});
-roomObserver.observe(document.body,{childList:true,subtree:true});
-
+async function ensureRoles(code,room,members){const snap=await get(ref(roleDb,`rooms/${code}/roles`));const existing=snap.val()||{};if(Object.keys(existing).length)return existing;const roles={owner:{name:'Owner',color:'#f0b232',position:100,permissions:{manageSettings:true,manageMembers:true,invite:true,deleteMessages:true,pinMessages:true,sendMessages:true},managed:false},admin:{name:'Admin',color:'#5865f2',position:50,permissions:{manageSettings:true,manageMembers:true,invite:true,deleteMessages:true,pinMessages:true,sendMessages:true},managed:false},member:{name:'Member',color:'#99aab5',position:0,permissions:{...DEFAULT_PERMS},managed:false}};const changes={};for(const [id,r] of Object.entries(roles))changes[`rooms/${code}/roles/${id}`]=r;for(const [uid] of Object.entries(members||{}))changes[`rooms/${code}/members/${uid}/role`]=uid===room.owner?'owner':'member';await update(ref(roleDb),changes);return roles}
+function permissionRows(perms){const names=[['manageSettings','Manage group settings'],['manageMembers','Manage members'],['invite','Invite members'],['deleteMessages','Delete messages'],['pinMessages','Pin messages'],['sendMessages','Send messages']];return names.map(([key,label])=>`<label class="p2p-role-permission"><input type="checkbox" data-role-perm="${key}" ${perms?.[key]?'checked':''}> ${label}</label>`).join('')}
+async function openRolePopup(code){const user=roleAuth.currentUser;if(!user||!code)return;const meta=(await get(ref(roleDb,`rooms/${code}/meta`))).val()||{};if(meta.owner!==user.uid){alert('Only the group owner can manage roles.');return}const members=(await get(ref(roleDb,`rooms/${code}/members`))).val()||{};const roles=await ensureRoles(code,meta,members);const m=roleModal(`<button class="x" id="p2p-role-x">×</button><h2>Roles</h2><p class="muted">Create roles with permissions, then assign a role to each member.</p><div class="p2p-role-layout"><div class="p2p-role-list" id="p2p-role-list"></div><div class="p2p-role-editor" id="p2p-role-editor"><p class="muted">Select a role.</p></div></div><div class="p2p-role-members"><h3>Members</h3><div id="p2p-role-members-list"></div></div><div class="modal-actions"><button id="p2p-role-close">Close</button><button class="primary" id="p2p-role-new">New role</button></div>`);const close=()=>m.remove();document.getElementById('p2p-role-x').onclick=document.getElementById('p2p-role-close').onclick=close;const list=document.getElementById('p2p-role-list'),editor=document.getElementById('p2p-role-editor'),memberList=document.getElementById('p2p-role-members-list');let selected=Object.keys(roles).sort((a,b)=>(roles[b].position||0)-(roles[a].position||0))[0]||null;const roleEntries=()=>Object.entries(roles).sort((a,b)=>(b[1].position||0)-(a[1].position||0));const renderRoles=()=>{list.innerHTML=roleEntries().map(([id,r])=>`<button class="p2p-role-item ${id===selected?'active':''}" data-role-id="${roleEsc(id)}"><span style="color:${roleEsc(r.color||'inherit')}">●</span>${roleEsc(r.name||id)}</button>`).join('');list.querySelectorAll('[data-role-id]').forEach(b=>b.onclick=()=>{selected=b.dataset.roleId;renderRoles();renderEditor()})};const renderMembers=()=>{memberList.innerHTML=Object.entries(members).map(([uid,u])=>{const current=u.role||(uid===meta.owner?'owner':'member');return `<div class="p2p-role-member"><div><b>${roleEsc(u.username||uid)}</b><small>${uid===meta.owner?'Owner':''}</small></div><select data-member-role="${roleEsc(uid)}" ${uid===meta.owner?'disabled':''}>${roleEntries().map(([rid,r])=>`<option value="${roleEsc(rid)}" ${rid===current?'selected':''}>${roleEsc(r.name||rid)}</option>`).join('')}</select></div>`}).join('');memberList.querySelectorAll('[data-member-role]').forEach(s=>s.onchange=async()=>{await update(ref(roleDb,`rooms/${code}/members/${s.dataset.memberRole}`),{role:s.value})})};const renderEditor=()=>{const r=roles[selected];if(!r){editor.innerHTML='<p class="muted">Select a role.</p>';return}const locked=selected==='owner';editor.innerHTML=`<label>Role name<input id="p2p-role-name" maxlength="40" value="${roleEsc(r.name||'')}" ${locked?'disabled':''}></label><label>Role color<input id="p2p-role-color" type="color" value="${roleEsc(r.color||'#5865f2')}" ${locked?'disabled':''}></label><h3>Permissions</h3>${permissionRows(r.permissions)}<div class="modal-actions"><button class="primary" id="p2p-role-save">Save role</button>${!locked?'<button class="danger" id="p2p-role-delete">Delete role</button>':''}</div>`;document.getElementById('p2p-role-save').onclick=async()=>{const name=document.getElementById('p2p-role-name').value.trim();if(!name)return alert('Role name is required.');const perms={};editor.querySelectorAll('[data-role-perm]').forEach(i=>perms[i.dataset.rolePerm]=i.checked);roles[selected]={...r,name,color:document.getElementById('p2p-role-color').value,permissions:perms};await set(ref(roleDb,`rooms/${code}/roles/${selected}`),roles[selected]);renderRoles();renderMembers()};document.getElementById('p2p-role-delete')?.addEventListener('click',async()=>{if(!confirm(`Delete the ${r.name||'role'} role? Members using it will become Members.`))return;for(const [uid,u] of Object.entries(members))if((u.role||'member')===selected)await update(ref(roleDb,`rooms/${code}/members/${uid}`),{role:'member'});await remove(ref(roleDb,`rooms/${code}/roles/${selected}`));delete roles[selected];selected='member';renderRoles();renderEditor();renderMembers()})};document.getElementById('p2p-role-new').onclick=async()=>{const id=push(ref(roleDb,`rooms/${code}/roles`)).key;roles[id]={name:'New Role',color:'#5865f2',position:10,permissions:{...DEFAULT_PERMS},managed:false};await set(ref(roleDb,`rooms/${code}/roles/${id}`),roles[id]);selected=id;renderRoles();renderEditor();renderMembers()};renderRoles();renderEditor();renderMembers()}
+// Remember the currently selected room without changing app.js.
+document.addEventListener('click',e=>{const room=e.target.closest('[data-room]');if(room)window.P2P_ACTIVE_ROOM=room.dataset.room;const button=e.target.closest('[data-room-settings],#p2p-group-settings-inline');if(!button)return;const code=button.dataset.roomSettings||window.P2P_ACTIVE_ROOM;if(!code)return;e.preventDefault();e.stopImmediatePropagation();openRolePopup(code)},true);
 window.P2P_OPEN_ROLE_POPUP=openRolePopup;
