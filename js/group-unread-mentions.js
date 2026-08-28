@@ -1,0 +1,16 @@
+import {getAuth,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+import {getDatabase,ref,get,onValue,update} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+const auth=getAuth(),db=getDatabase();let user=null;const watchers=new Map();const lastRead=new Map();
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const key=(room,ch)=>`${room}/${ch}`;
+async function profile(){return (await get(ref(db,`users/${user.uid}/profile`))).val()||{}}
+function roomRow(code){return [...document.querySelectorAll('#room-list .room-row')].find(r=>r.querySelector('[data-room]')?.dataset.room===code)}
+function channelRow(id){return document.querySelector(`.p2p-cs-channel[data-channel="${CSS.escape(id)}"]`)}
+function clearRoom(code){roomRow(code)?.classList.remove('p2p-unread-room','p2p-mentioned-room')}
+function clearChannel(id){channelRow(id)?.classList.remove('p2p-unread-channel','p2p-mentioned-channel')}
+async function markRoomRead(code){const row=roomRow(code);if(row)clearRoom(code);}
+async function watchChannel(code,id,channelName){const k=key(code,id);if(watchers.has(k))return;const r=ref(db,`rooms/${code}/channels/${id}/messages`);const unsub=onValue(r,async s=>{const data=s.val()||{};const values=Object.entries(data).sort((a,b)=>(a[1]?.time||0)-(b[1]?.time||0));if(!values.length)return;const last=lastRead.get(k)||0;let unread=false,mentioned=false;const p=await profile();const username=(p.username||user.displayName||'').toLowerCase();for(const [,v] of values){if((v?.time||0)<=last||v?.uid===user.uid)continue;unread=true;const text=String(v?.text||'').toLowerCase();if(username&&new RegExp(`(^|[^a-z0-9_])@${username.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\$&')}(?=$|[^a-z0-9_])`,'i').test(text))mentioned=true;}if(unread){const row=channelRow(id);row?.classList.add('p2p-unread-channel');if(mentioned)row?.classList.add('p2p-mentioned-channel');const rr=roomRow(code);rr?.classList.add('p2p-unread-room');if(mentioned)rr?.classList.add('p2p-mentioned-room')}});watchers.set(k,unsub)}
+async function watchRoom(code){const channels=(await get(ref(db,`rooms/${code}/channels`))).val()||{};for(const [id,ch] of Object.entries(channels))watchChannel(code,id,ch?.name||id)}
+function observeRoomList(){const list=document.getElementById('room-list');if(!list)return;const mo=new MutationObserver(async()=>{if(!user)return;const joined=Object.keys((await get(ref(db,`users/${user.uid}/joinedRooms`))).val()||{});for(const code of joined)watchRoom(code)});mo.observe(list,{childList:true,subtree:true});}
+document.addEventListener('click',async e=>{const room=e.target.closest('[data-room]')?.dataset.room;if(room){clearRoom(room);setTimeout(()=>{document.querySelectorAll('.p2p-cs-channel').forEach(b=>b.classList.remove('p2p-unread-channel','p2p-mentioned-channel'))},50)}const ch=e.target.closest('.p2p-cs-channel')?.dataset.channel;if(ch)clearChannel(ch)});
+onAuthStateChanged(auth,async u=>{user=u;if(!u)return;observeRoomList();const joined=Object.keys((await get(ref(db,`users/${u.uid}/joinedRooms`))).val()||{});joined.forEach(watchRoom);onValue(ref(db,`users/${u.uid}/joinedRooms`),s=>Object.keys(s.val()||{}).forEach(watchRoom));});
