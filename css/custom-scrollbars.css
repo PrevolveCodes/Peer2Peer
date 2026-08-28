@@ -1,0 +1,8 @@
+/* Peer2Peer custom scrollbars */
+*{scrollbar-width:thin;scrollbar-color:rgba(88,101,242,.55) transparent}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:rgba(88,101,242,.55);border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{background:rgba(88,101,242,.8);border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-corner{background:transparent}
+.messages,.content,.sidebar,#friends-home-list,#friends-list,#dm-list,#room-list{scrollbar-width:thin;scrollbar-color:rgba(88,101,242,.55) transparent}
