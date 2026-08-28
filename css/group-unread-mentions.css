@@ -1,0 +1,10 @@
+/* Discord-style group/channel unread indicators */
+#room-list .room-row{position:relative}
+#room-list .room-row.p2p-unread-room:before{content:"";position:absolute;left:-1px;top:50%;transform:translateY(-50%);width:4px;height:28px;border-radius:0 4px 4px 0;background:#fff;z-index:5}
+#room-list .room-row.p2p-mentioned-room:before{height:42px;width:5px}
+#room-list .room-row.p2p-mentioned-room:after{content:"@";position:absolute;right:8px;top:50%;transform:translateY(-50%);min-width:18px;height:18px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center;font-size:11px;font-weight:800;z-index:6}
+.p2p-cs-channel{position:relative}
+.p2p-cs-channel.p2p-unread-channel:before{content:"";position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:3px;height:18px;border-radius:0 3px 3px 0;background:#fff}
+.p2p-cs-channel.p2p-mentioned-channel:before{height:25px;width:4px}
+.p2p-cs-channel.p2p-mentioned-channel:after{content:"@";position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:800;color:#fff}
+.p2p-mention-highlight{font-weight:800}
