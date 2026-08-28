@@ -1,7 +1,7 @@
 import {getApps,initializeApp} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import {getAuth} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import {getDatabase,ref,get,set,update,remove,push} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
-const roleFirebaseConfig={apiKey:'AIzaSyAucXMpqBhYbZ1fSbkTKHX23y9bpx1hec',authDomain:'p2pminimalchat.firebaseapp.com',databaseURL:'https://p2pminimalchat-default-rtdb.firebaseio.com',projectId:'p2pminimalchat',storageBucket:'p2pminimalchat.firebasestorage.app',messagingSenderId:'37869407438',appId:'1:37869407438:web:63485dde33bb8710f8d49f',measurementId:'G-9JNKBE87C3'};
+const roleFirebaseConfig={apiKey:'AIzaSyAucXMpqBhYbZy1fSbkTKHX23y9bpx1hec',authDomain:'p2pminimalchat.firebaseapp.com',databaseURL:'https://p2pminimalchat-default-rtdb.firebaseio.com',projectId:'p2pminimalchat',storageBucket:'p2pminimalchat.firebasestorage.app',messagingSenderId:'37869407438',appId:'1:37869407438:web:63485dde33bb8710f8d49f',measurementId:'G-9JNKBE87C3'};
 const roleApp=getApps().length?getApps()[0]:initializeApp(roleFirebaseConfig),roleAuth=getAuth(roleApp),roleDb=getDatabase(roleApp);
 const roleEsc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const root=()=>document.getElementById('modal-root');
