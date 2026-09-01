@@ -1,4 +1,0 @@
-@media (max-width:520px){
-  .section-title:before,
-  .list-item:before{content:none!important;display:none!important}
-}
