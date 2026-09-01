@@ -1,126 +1,22 @@
-const GROUP_GAP_MS = 10 * 60 * 1000;
-const TIMESTAMP_GAP_MS = 5 * 60 * 1000;
-
-const style = document.createElement('style');
-style.textContent = `
-.message.message-grouped .message-avatar { visibility: hidden; }
-.message.message-grouped .message-body > b { display: none; }
-.message.message-grouped { margin-top: 0 !important; padding-top: 1px !important; padding-bottom: 1px !important; }
-.message.message-group-start { margin-top: 4px !important; }
-.message-group-timestamp { display: none !important; font-size: 11px; color: var(--muted); margin: 2px 0 2px 52px; }
-.message.message-show-timestamp .message-group-timestamp { display: block !important; }
-.message.message-show-timestamp { margin-top: 4px !important; }
-.message .message-body > small { display: none !important; }
-`;
-document.head.appendChild(style);
-
-function captureMessageTimes(container) {
-  [...container.querySelectorAll('.message')].forEach(message => {
-    if (message.dataset.groupTime) return;
-    const small = message.querySelector('.message-body > small');
-    if (!small) return;
-    const value = small.textContent.trim();
-    const parsed = new Date(`1970-01-01 ${value}`);
-    if (!Number.isNaN(parsed.getTime())) {
-      message.dataset.groupTime = String(parsed.getHours() * 60 * 60 * 1000 + parsed.getMinutes() * 60 * 1000);
-      message.dataset.groupTimeText = value;
-    }
+// One authoritative message-grouping engine shared by DMs and group text channels.
+const GROUP_GAP_MS=10*60*1000;
+function apply(container,{itemSelector='.message',senderAttribute='data-group-uid',timeAttribute='data-group-time',avatarSelector='.message-avatar',nameSelector='.message-body > b'}={}){
+  if(!container)return;
+  const items=[...container.querySelectorAll(`:scope > ${itemSelector}`)];
+  let previousSender=null,previousTime=null;
+  items.forEach((item,index)=>{
+    item.classList.remove('message-grouped','message-group-start');
+    const sender=item.getAttribute(senderAttribute)||'';
+    const time=Number(item.getAttribute(timeAttribute));
+    const gap=Number.isFinite(time)&&Number.isFinite(previousTime)?Math.max(0,time-previousTime):Infinity;
+    const grouped=index>0&&sender&&sender===previousSender&&gap<GROUP_GAP_MS;
+    item.classList.add(grouped?'message-grouped':'message-group-start');
+    item.querySelector(avatarSelector)?.classList.toggle('group-hidden',grouped);
+    item.querySelector(nameSelector)?.classList.toggle('group-hidden',grouped);
+    previousSender=sender;previousTime=Number.isFinite(time)?time:null;
   });
 }
-
-function messageTime(message) {
-  const stored = Number(message.dataset.groupTime);
-  return Number.isFinite(stored) && message.dataset.groupTime ? stored : null;
-}
-
-function senderId(message) {
-  return message.querySelector('[data-profile-uid]')?.dataset.profileUid || '';
-}
-
-function ensureTimestamp(message) {
-  let timestamp = message.querySelector('.message-group-timestamp');
-  if (!timestamp) {
-    timestamp = document.createElement('div');
-    timestamp.className = 'message-group-timestamp';
-    const body = message.querySelector('.message-body');
-    if (body) body.parentNode.insertBefore(timestamp, body);
-  }
-  timestamp.textContent = message.dataset.groupTimeText || '';
-}
-
-let regrouping = false;
-let scheduled = false;
-
-function regroupMessages() {
-  const container = document.getElementById('messages');
-  if (!container || regrouping) return;
-
-  regrouping = true;
-  try {
-    captureMessageTimes(container);
-    const messages = [...container.querySelectorAll(':scope > .message')];
-    let previousSender = null;
-    let previousTime = null;
-
-    messages.forEach((message, index) => {
-      message.classList.remove('message-grouped', 'message-group-start', 'message-show-timestamp');
-
-      const oldTimestamp = message.querySelector('.message-group-timestamp');
-      if (oldTimestamp) oldTimestamp.remove();
-
-      const sender = senderId(message);
-      const time = messageTime(message);
-      let gap = Infinity;
-
-      if (time !== null && previousTime !== null) {
-        gap = time - previousTime;
-        if (gap < 0) gap += 24 * 60 * 60 * 1000;
-      }
-
-      const sameGroup = index > 0 && sender && sender === previousSender && gap < GROUP_GAP_MS;
-
-      if (sameGroup) {
-        message.classList.add('message-grouped');
-      } else {
-        message.classList.add('message-group-start');
-        if (index > 0 && gap >= TIMESTAMP_GAP_MS) {
-          ensureTimestamp(message);
-          message.classList.add('message-show-timestamp');
-        }
-      }
-
-      previousSender = sender;
-      previousTime = time;
-    });
-  } finally {
-    regrouping = false;
-  }
-}
-
-function scheduleRegroup() {
-  if (scheduled) return;
-  scheduled = true;
-  requestAnimationFrame(() => {
-    scheduled = false;
-    regroupMessages();
-  });
-}
-
-function watchMessages() {
-  const container = document.getElementById('messages');
-  if (!container || container.dataset.groupingReady) return;
-  container.dataset.groupingReady = '1';
-  regroupMessages();
-
-  const observer = new MutationObserver(() => {
-    if (!regrouping) scheduleRegroup();
-  });
-  observer.observe(container, {childList: true, subtree: true});
-}
-
-const pageObserver = new MutationObserver(() => {
-  if (!document.getElementById('messages')) return;
-  watchMessages();
-});
-pageObserver.observe(document.body, {childList: true, subtree: true});
-watchMessages();
+window.P2PMessageGrouping={apply};
+function watchDM(){const container=document.getElementById('messages');if(!container||container.dataset.groupingReady)return;container.dataset.groupingReady='1';const run=()=>apply(container,{itemSelector:'.message',senderAttribute:'data-group-uid',timeAttribute:'data-group-time',avatarSelector:'.message-avatar',nameSelector:'.message-body > b'});run();new MutationObserver(()=>requestAnimationFrame(run)).observe(container,{childList:true,subtree:true})}
+new MutationObserver(watchDM).observe(document.body,{childList:true,subtree:true});watchDM();
+const style=document.createElement('style');style.textContent=`.message.message-grouped{margin-top:0!important;padding-top:1px!important;padding-bottom:1px!important}.message.message-group-start{margin-top:10px!important}.message.message-grouped .message-avatar,.message.message-grouped .message-body>b{visibility:hidden}.message.message-grouped .message-body>b{display:none}.message .message-body>small{display:none!important}.workspace-message.grouped .workspace-message-avatar,.workspace-message.grouped .workspace-message-body>b{visibility:hidden}.workspace-message.grouped .workspace-message-body>b{display:none}`;document.head.appendChild(style);
